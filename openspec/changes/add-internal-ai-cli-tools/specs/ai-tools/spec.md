@@ -16,12 +16,12 @@ The system SHALL map internal tools to the following package names and commands:
 - **WHEN** the system surfaces an install hint for an internal tool
 - **THEN** it references the internal package name for that tool
 
-### Requirement: Internal tools use Tencent npm registry for installation
-The system SHALL use `--registry=<private-registry-url>` for internal tool installation commands.
+### Requirement: Internal tools use a private npm registry for installation
+The system SHALL use a private registry flag for internal tool installation commands.
 
 #### Scenario: User installs internal tool
 - **WHEN** the user chooses to install an internal tool
-- **THEN** the install command includes the Tencent npm registry flag
+- **THEN** the install command includes the private npm registry flag
 
 ### Requirement: Public tools remain available
 The system SHALL keep existing public tool options unchanged.

@@ -10,7 +10,7 @@
 **安装步骤**：
 ```bash
 # 1. 克隆仓库
-git clone <private-repository-url>
+git clone <public-repository-url>
 cd clihub
 
 # 2. 安装依赖
@@ -66,7 +66,7 @@ code --install-extension codebuddy-terminal-editor-0.0.8.vsix
 ```
 
 **发布流程**：
-- 目前通过内部分发（private distribution channel）
+- 目前通过私有渠道分发
 - 未来可发布到 VS Code Marketplace（需注册 publisher）
 
 ## Testing Strategy

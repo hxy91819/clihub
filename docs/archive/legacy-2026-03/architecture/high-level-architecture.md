@@ -45,4 +45,4 @@
 - **类型**: 单一仓库（Monorepo 架构，但仅包含一个扩展）
 - **包管理器**: npm
 - **构建输出**: `out/` 目录（TypeScript 编译后的 JS 文件）
-- **版本控制**: Git (<private-repository-url>)
+- **版本控制**: Git（仓库地址已在公开版本中脱敏）

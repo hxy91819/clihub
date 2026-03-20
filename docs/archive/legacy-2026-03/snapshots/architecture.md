@@ -305,7 +305,7 @@ clihub/
 
 ### Existing Infrastructure
 
-**Current Deployment**: 手动打包为 `.vsix` 文件，通过 private distribution channel 或本地安装分发  
+**Current Deployment**: 手动打包为 `.vsix` 文件，通过私有渠道或本地安装分发  
 **Infrastructure Tools**: `@vscode/vsce`（VS Code Extension Manager）  
 **Environments**: 无分离环境（用户本地安装）
 
