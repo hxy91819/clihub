@@ -1112,7 +1112,9 @@ export function __setCurrentToolIdForTests(toolId: string): void {
 }
 
 export function __registerToolForTests(tool: ToolManifestEntry): void {
-  if (getToolById(tool.id)) {
+  const existing = getToolById(tool.id);
+  if (existing) {
+    availableTools = availableTools.map(entry => entry.id === tool.id ? { ...existing, ...tool } : entry);
     return;
   }
   availableTools = [...availableTools, { ...tool }];

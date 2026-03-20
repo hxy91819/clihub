@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { disposeAllTerminals, delay } from './test-helpers';
 import { __registerToolForTests, __resetAvailableToolsForTests } from '../../extension';
@@ -8,16 +9,22 @@ const PANEL_POSITION_RIGHT_COMMAND = 'workbench.action.positionPanelRight';
 describe('Integration: Terminal Adoption', () => {
   before(() => {
     __registerToolForTests({
-      id: 'zsh',
-      label: 'zsh',
+      id: 'bash',
+      label: 'bash',
       description: 'Test shell tool',
-      command: 'zsh',
+      command: 'bash',
     });
   });
 
   after(() => {
     __resetAvailableToolsForTests();
   });
+
+  function workspaceFixtureUri(fileName: string): vscode.Uri {
+    const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    assert.ok(workspacePath, 'Workspace path should be available for integration tests');
+    return vscode.Uri.file(path.join(workspacePath, fileName));
+  }
 
   // 每个测试后清理所有终端
   afterEach(async function() {
@@ -41,13 +48,13 @@ describe('Integration: Terminal Adoption', () => {
 
     // 预置：创建一个通用 shell 终端
     const genericTerminal = vscode.window.createTerminal({
-      name: 'zsh',
-      shellPath: '/bin/zsh',
+      name: 'bash',
+      shellPath: '/bin/bash',
     });
 
     try {
       // 使用系统普遍存在的命令，避免安装检测弹窗阻塞测试
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
 
       // 等待终端创建完成
@@ -167,7 +174,7 @@ describe('Integration: Terminal Adoption', () => {
 
     try {
       // 使用系统普遍存在的命令，避免安装检测弹窗阻塞测试
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
 
       const terminalCountBefore = vscode.window.terminals.length;
@@ -221,7 +228,7 @@ describe('Integration: Terminal Adoption', () => {
 
     try {
       // 使用系统普遍存在的命令，避免安装检测弹窗阻塞测试
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
 
       const terminalCountBefore = vscode.window.terminals.length;
@@ -263,7 +270,7 @@ describe('Integration: Terminal Adoption', () => {
     const originalWarningMessage = (vscode.window as any).showWarningMessage;
 
     try {
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
 
       const countBefore = vscode.window.terminals.length;
@@ -291,10 +298,10 @@ describe('Integration: Terminal Adoption', () => {
     const originalWarningMessage = (vscode.window as any).showWarningMessage;
 
     try {
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
 
-      const targetUri = vscode.Uri.file('/workspace/src/test/fixtures/workspace/.gitkeep');
+      const targetUri = workspaceFixtureUri('.gitkeep');
       const doc = await vscode.workspace.openTextDocument(targetUri);
       await vscode.window.showTextDocument(doc, { preview: false });
 
@@ -334,19 +341,19 @@ describe('Integration: Terminal Adoption', () => {
     let terminal: vscode.Terminal | undefined;
 
     try {
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       await config.update('toolEnvironments', {
-        zsh: {
+        bash: {
           CLI_TEST_ENV: '1',
         },
       } as Record<string, Record<string, string>>, vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
 
       terminal = vscode.window.createTerminal({
-        name: 'zsh',
+        name: 'bash',
         env: {
           CLIHUB_TERMINAL: '1',
-          CLIHUB_TOOL_ID: 'zsh',
+          CLIHUB_TOOL_ID: 'bash',
           CLIHUB_TOOL_ENV_SIGNATURE: 'CLI_TEST_ENV=1',
           CLIHUB_WORKSPACE_PATH: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '',
           CLI_TEST_ENV: '1',
@@ -384,7 +391,7 @@ describe('Integration: Terminal Adoption', () => {
     const executedCommands: string[] = [];
 
     try {
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       await config.update('nativeTerminalLocation', 'right', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
       (vscode.commands as any).executeCommand = async (command: string, ...args: any[]) => {
@@ -421,7 +428,7 @@ describe('Integration: Terminal Adoption', () => {
     const executedCommands: string[] = [];
 
     try {
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       await config.update('nativeTerminalLocation', 'right', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
       (vscode.commands as any).executeCommand = async (command: string, ...args: any[]) => {
@@ -458,7 +465,7 @@ describe('Integration: Terminal Adoption', () => {
     const executedCommands: string[] = [];
 
     try {
-      await config.update('terminalCommand', 'zsh', vscode.ConfigurationTarget.Workspace);
+      await config.update('terminalCommand', 'bash', vscode.ConfigurationTarget.Workspace);
       await config.update('nativeTerminalLocation', 'right', vscode.ConfigurationTarget.Workspace);
       (vscode.window as any).showWarningMessage = async () => 'Cancel';
       (vscode.commands as any).executeCommand = async (command: string, ...args: any[]) => {

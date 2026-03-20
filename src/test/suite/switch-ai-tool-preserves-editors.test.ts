@@ -1,7 +1,8 @@
 import * as assert from 'assert';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { delay, disposeAllTerminals, waitForCondition } from './test-helpers';
-import { __resetToolSelectionForTests, __setCurrentToolIdForTests } from '../../extension';
+import { __registerToolForTests, __resetAvailableToolsForTests, __resetToolSelectionForTests, __setCurrentToolIdForTests } from '../../extension';
 
 function collectTabUris(): Set<string> {
   const set = new Set<string>();
@@ -20,6 +21,37 @@ function collectTabUris(): Set<string> {
 }
 
 describe('Integration: Switch AI Tool', () => {
+  before(() => {
+    __registerToolForTests({
+      id: 'gemini',
+      label: 'Gemini CLI',
+      description: 'Google Gemini CLI',
+      command: 'bash',
+    });
+    __registerToolForTests({
+      id: 'claude',
+      label: 'Claude Code',
+      description: 'Anthropic Claude Code',
+      command: 'bash',
+    });
+    __registerToolForTests({
+      id: 'codex',
+      label: 'Codex',
+      description: 'OpenAI Codex',
+      command: 'bash',
+    });
+  });
+
+  after(() => {
+    __resetAvailableToolsForTests();
+  });
+
+  function workspaceFixtureUri(fileName: string): vscode.Uri {
+    const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    assert.ok(workspacePath, 'Workspace path should be available for integration tests');
+    return vscode.Uri.file(path.join(workspacePath, fileName));
+  }
+
   afterEach(async function() {
     this.timeout(8000);
     try { await __resetToolSelectionForTests(); } catch { /* ignore */ }
@@ -132,7 +164,7 @@ describe('Integration: Switch AI Tool', () => {
       const interrupts = sentCommands.filter(c => c.text === '\u0003');
       assert.ok(interrupts.length >= 2, 'Switching should send double Ctrl+C to leave current interactive CLI');
 
-      const expectedCommand = 'codex --dangerously-bypass-approvals-and-sandbox';
+      const expectedCommand = 'bash --dangerously-bypass-approvals-and-sandbox';
       const startCommand = sentCommands.find(c => c.text.trim() === expectedCommand);
       assert.ok(startCommand, `Switching should send start command: ${expectedCommand}`);
       assert.strictEqual(startCommand?.addNewLine, true, 'Start command should be executed with newline');
@@ -403,7 +435,7 @@ describe('Integration: Switch AI Tool', () => {
         originalSendText(text, addNewLine);
       };
 
-      const targetUri = vscode.Uri.file('/workspace/src/test/fixtures/workspace/.gitkeep');
+      const targetUri = workspaceFixtureUri('.gitkeep');
       const doc = await vscode.workspace.openTextDocument(targetUri);
       await vscode.window.showTextDocument(doc, { preview: false });
 
