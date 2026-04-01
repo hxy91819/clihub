@@ -118,3 +118,5 @@ This is useful when a CLI must be launched with both env vars and flags, such as
 2. For non-public builds, inject an external manifest through the release pipeline instead of committing private tool definitions to this repository.
 3. Update `README.md`, `README.zh-CN.md`, and `CHANGELOG.md` so users know how the new tool is installed and used.
 4. Run `npm run compile` and validate terminal routing in an Extension Development Host.
+
+Thanks
