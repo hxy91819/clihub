@@ -2,7 +2,7 @@
 
 [English](./README.md) | 中文
 
-**当前版本**: cli-hub-1.4.2.vsix
+**当前版本**: cli-hub-1.4.3.vsix
 
 一个轻量级的 VS Code 扩展，将多种 AI CLI 工具直接集成到编辑器中，支持多 Terminal 会话、激活会话路由和快速发送文件路径。
 
@@ -41,7 +41,7 @@
 - 使用命令面板：`CLI Hub: Send File Path to AI Tool Terminal`
 
 ### 3. 多 AI 工具一键切换
-- 内置 Codebuddy、Gemini CLI、Claude Code、Codex、GitHub Copilot CLI、Cursor CLI，多工具列表随时扩展
+- 内置 Codebuddy、Gemini CLI、Claude Code、Codex、OpenCode、GitHub Copilot CLI、Cursor CLI，多工具列表随时扩展
 - 状态栏显示当前工具，点击即可选择其他工具
 - 提供命令面板 `CLI Hub: Switch AI Tool`，快捷切换
 - 当你选择不同工具时，若当前激活的是 CLI Hub 终端，会在该终端内直接切换到新工具
@@ -82,6 +82,7 @@
     "gemini": "",
     "claude": "",
     "codex": "",
+    "opencode": "",
     "copilot": "",
     "cursor-agent": ""
   }
@@ -123,3 +124,15 @@
 2. 如需构建非公开版工具集，在 release 流程中通过 `--tool-manifest` 注入外部 manifest，不要把私有工具定义提交到开源仓库。
 3. 更新 `README.md`、`README.zh-CN.md`、`CHANGELOG.md` 等文档，确保用户了解新工具的支持与安装方式。
 4. 运行 `npm run compile` 确认类型检查通过，并在扩展开发主机中手动验证终端切换逻辑。
+
+## 当前内置工具
+
+| Tool ID | 显示名称 | 命令 | 默认安装命令 |
+|------|------|------|------|
+| `codebuddy` | Codebuddy | `codebuddy` | `npm install -g @tencent-ai/codebuddy-code` |
+| `gemini` | Gemini CLI | `gemini` | `npm install -g @google/gemini-cli` |
+| `claude` | Claude Code | `claude` | `npm install -g @anthropic-ai/claude-code` |
+| `codex` | Codex | `codex` | `npm install -g @openai/codex` |
+| `opencode` | OpenCode | `opencode` | `npm install -g opencode-ai` |
+| `copilot` | GitHub Copilot CLI | `copilot` | `npm install -g @github/copilot` |
+| `cursor-agent` | Cursor CLI | `cursor-agent` | `curl -fsSL https://cursor.com/install \| bash` |

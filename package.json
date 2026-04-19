@@ -2,7 +2,7 @@
   "name": "cli-hub",
   "displayName": "CLI Hub: AI Tools Terminal",
   "description": "Open and manage multiple AI CLI terminal sessions in VS Code.",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "publisher": "clihub",
   "repository": {
     "type": "git",
@@ -33,7 +33,7 @@
         "clihub.terminalCommand": {
           "type": "string",
           "default": "codebuddy",
-          "markdownDescription": "The command to run when opening the terminal. Supports AI CLI tools like `codebuddy`, `gemini`, `claude`, etc.",
+          "markdownDescription": "The command to run when opening the terminal. Supports AI CLI tools like `codebuddy`, `gemini`, `claude`, `opencode`, etc.",
           "order": 0
         },
         "clihub.autoShowLogsOnStartup": {
@@ -59,7 +59,7 @@
         "clihub.toolArguments": {
           "type": "object",
           "default": {},
-          "markdownDescription": "Custom command-line arguments for each AI tool. Use the tool id as the key. Common YOLO mode examples:\n- Copilot: `--allow-all-tools`\n- Claude: `--dangerously-skip-permissions`\n- Codebuddy: `--dangerously-skip-permissions`\n- Codex: `--full-auto`\n- Gemini: `--yolo`\n- Cursor Agent: `--force`",
+          "markdownDescription": "Custom command-line arguments for each AI tool. Use the tool id as the key. Common YOLO mode examples:\n- Copilot: `--allow-all-tools`\n- Claude: `--dangerously-skip-permissions`\n- Codebuddy: `--dangerously-skip-permissions`\n- Codex: `--full-auto`\n- Gemini: `--yolo`\n- Cursor Agent: `--force`\n- OpenCode: add the flags you prefer for your local workflow",
           "order": 6,
           "additionalProperties": {
             "type": "string"

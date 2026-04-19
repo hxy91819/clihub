@@ -6,6 +6,7 @@
 - ✨ 新增多终端会话模型：支持并行创建多个 CLI Hub 终端会话
 - ✨ 新增命令 `clihub.openNewTerminalSession`（默认快捷键 `Cmd+Ctrl+Shift+J` / `Ctrl+Alt+Shift+J`）
 - ✨ 发送路由升级：`Send File Path` 优先发送到当前激活 CLI Hub 终端
+- ✨ 新增 `opencode` 内置工具配置，默认命令为 `opencode`，安装命令为 `npm install -g opencode-ai`
 
 ### ♻️ 行为调整
 - ♻️ 移除 `editor` 模式，仅保留原生终端面板

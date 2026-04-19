@@ -13,6 +13,7 @@ export interface ToolManifestEntry {
 
 const FALLBACK_PUBLIC_TOOLS: ToolManifestEntry[] = [
   { id: 'codex', label: 'Codex', description: 'OpenAI Codex', command: 'codex', packageName: '@openai/codex' },
+  { id: 'opencode', label: 'OpenCode', description: 'Anomaly OpenCode', command: 'opencode', packageName: 'opencode-ai' },
   { id: 'claude', label: 'Claude Code', description: 'Anthropic Claude Code', command: 'claude', packageName: '@anthropic-ai/claude-code' },
   { id: 'codebuddy', label: 'Codebuddy', description: 'Tencent AI Codebuddy', command: 'codebuddy', packageName: '@tencent-ai/codebuddy-code' },
   { id: 'copilot', label: 'Copilot', description: 'GitHub Copilot CLI', command: 'copilot', packageName: '@github/copilot' },

@@ -7,6 +7,13 @@
     "packageName": "@openai/codex"
   },
   {
+    "id": "opencode",
+    "label": "OpenCode",
+    "description": "Anomaly OpenCode",
+    "command": "opencode",
+    "packageName": "opencode-ai"
+  },
+  {
     "id": "claude",
     "label": "Claude Code",
     "description": "Anthropic Claude Code",
