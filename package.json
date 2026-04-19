@@ -2,7 +2,7 @@
   "name": "cli-hub",
   "displayName": "CLI Hub: AI Tools Terminal",
   "description": "Open and manage multiple AI CLI terminal sessions in VS Code.",
-  "version": "1.4.3",
+  "version": "1.4.5",
   "publisher": "clihub",
   "repository": {
     "type": "git",
@@ -164,6 +164,7 @@
     "test": "node ./out/test/runTest.js",
     "test:unit": "node ./out/test/runTest.js --grep 'Unit'",
     "test:integration": "node ./out/test/runTest.js --grep 'Integration'",
+    "install:everywhere": "bash ./scripts/install-everywhere.sh",
     "bmad:refresh": "bmad-method install -f -i codex",
     "bmad:list": "bmad-method list:agents",
     "bmad:validate": "bmad-method validate"

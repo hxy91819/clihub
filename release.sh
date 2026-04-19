@@ -2,6 +2,23 @@
 
 set -euo pipefail
 
+# Quick start examples:
+#   1) Rebuild current public package:
+#      bash ./release.sh 1.4.3 --force --channel public
+#   2) Rebuild current internal package:
+#      bash ./release.sh 1.4.3 --force --channel internal \
+#        --tool-manifest /absolute/path/to/tool-manifest.internal.json
+#   3) Build a new version for public release:
+#      bash ./release.sh 1.4.4 --channel public
+#   4) Build a new version for internal release:
+#      bash ./release.sh 1.4.4 --channel internal \
+#        --tool-manifest /absolute/path/to/tool-manifest.internal.json
+#
+# Notes:
+#   - Run from the repository root.
+#   - Internal builds must provide --tool-manifest.
+#   - Use --force only when rebuilding the same version.
+
 # 中文注释: 该脚本用于自动更新版本号并打包VSCode插件
 
 # 中文注释: 使用反例（不要这样用）
