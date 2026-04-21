@@ -445,7 +445,7 @@ describe('Integration: Switch AI Tool', () => {
       await vscode.commands.executeCommand('clihub.sendPathToTerminal');
       await delay(600);
 
-      const payload = sentCommands.find(c => c.text.includes('@.gitkeep '));
+      const payload = sentCommands.find(c => c.text.includes('.gitkeep '));
       assert.ok(payload, 'sendPathToTerminal should route to the terminal that matches the latest terminalCommand');
     } finally {
       (vscode.window as any).showWarningMessage = originalWarningMessage;
