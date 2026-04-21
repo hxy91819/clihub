@@ -30,7 +30,7 @@ Use the keyboard shortcut `Cmd+Shift+J` (Mac) or `Ctrl+Shift+J` (Windows/Linux) 
 - New session shortcut: `Cmd+Ctrl+Shift+J` (Mac) / `Ctrl+Alt+Shift+J` (Windows/Linux)
 
 ### 3. Switch Between AI Tools
-- Built-in profiles for Codex, Claude Code, Codebuddy, GitHub Copilot CLI, Cursor CLI, and Gemini CLI
+- Built-in profiles for Codex, OpenCode, Claude Code, Codebuddy, GitHub Copilot CLI, Cursor CLI, and Gemini CLI
 - Change the active tool from the status bar or with the `CLI Hub: Switch AI Tool` command. If a CLI Hub terminal is active, switching happens in that same terminal.
 
 ## Usage
@@ -55,6 +55,7 @@ Configure `clihub.toolArguments` in VS Code `settings.json` (or via the Settings
     "gemini": "",
     "claude": "",
     "codex": "",
+    "opencode": "",
     "copilot": "",
     "cursor-agent": ""
   }
@@ -104,6 +105,7 @@ This is useful when a CLI must be launched with both env vars and flags, such as
 | **Codebuddy** | `--dangerously-skip-permissions` | Skips permission prompts and executes automatically | High |
 | **Codex** | `--full-auto` | Full automation without human confirmation | High |
 | **Gemini** | `--yolo` | Auto-confirms all operations | High |
+| **OpenCode** | No default preset | Check `opencode --help` and add the flags you want | Medium |
 | **Cursor Agent** | `--force` / `-f` | Forces command execution unless explicitly denied | High |
 
 ### Troubleshooting
@@ -118,3 +120,15 @@ This is useful when a CLI must be launched with both env vars and flags, such as
 2. For non-public builds, inject an external manifest through the release pipeline instead of committing private tool definitions to this repository.
 3. Update `README.md`, `README.zh-CN.md`, and `CHANGELOG.md` so users know how the new tool is installed and used.
 4. Run `npm run compile` and validate terminal routing in an Extension Development Host.
+
+## Supported Tools
+
+| Tool ID | Display Name | Command | Default install command |
+|------|------|------|------|
+| `codebuddy` | Codebuddy | `codebuddy` | `npm install -g @tencent-ai/codebuddy-code` |
+| `gemini` | Gemini CLI | `gemini` | `npm install -g @google/gemini-cli` |
+| `claude` | Claude Code | `claude` | `npm install -g @anthropic-ai/claude-code` |
+| `codex` | Codex | `codex` | `npm install -g @openai/codex` |
+| `opencode` | OpenCode | `opencode` | `npm install -g opencode-ai` |
+| `copilot` | Copilot | `copilot` | `npm install -g @github/copilot` |
+| `cursor-agent` | Cursor CLI | `cursor-agent` | `curl -fsSL https://cursor.com/install \| bash` |

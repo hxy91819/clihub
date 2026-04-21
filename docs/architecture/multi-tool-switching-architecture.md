@@ -4,6 +4,8 @@
 
 工具来源于构建期注入的 manifest。公开版默认读取 `config/tool-manifest.public.json`，release 流程可在打包前注入 `config/tool-manifest.json` 以覆盖当前产物的工具清单。
 
+当前公开版内置工具包括：`codebuddy`、`gemini`、`claude`、`codex`、`opencode`、`copilot`、`cursor-agent`。
+
 ## 工具切换流程
 
 **用户操作**：点击状态栏或执行 `clihub.switchAITool`
