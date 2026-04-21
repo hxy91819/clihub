@@ -7,6 +7,13 @@
     "packageName": "@anthropic-ai/claude-code"
   },
   {
+    "id": "claude-internal",
+    "label": "Claude Code (Internal)",
+    "description": "Tencent internal Claude Code",
+    "command": "claude-internal",
+    "installCommand": "npm install -g --registry=https://mirrors.tencent.com/npm @tencent/claude-code-internal"
+  },
+  {
     "id": "codebuddy",
     "label": "Codebuddy",
     "description": "Tencent AI Codebuddy",
@@ -19,6 +26,13 @@
     "description": "OpenAI Codex",
     "command": "codex",
     "packageName": "@openai/codex"
+  },
+  {
+    "id": "codex-internal",
+    "label": "Codex (Internal)",
+    "description": "Tencent internal Codex",
+    "command": "codex-internal",
+    "installCommand": "npm install -g --registry=https://mirrors.tencent.com/npm @tencent/codex-internal"
   },
   {
     "id": "copilot",
@@ -40,6 +54,13 @@
     "description": "Google Gemini CLI",
     "command": "gemini",
     "packageName": "@google/gemini-cli"
+  },
+  {
+    "id": "gemini-internal",
+    "label": "Gemini CLI (Internal)",
+    "description": "Tencent internal Gemini CLI",
+    "command": "gemini-internal",
+    "installCommand": "npm install -g --registry=https://mirrors.tencent.com/npm @tencent/gemini-cli-internal"
   },
   {
     "id": "kimi",

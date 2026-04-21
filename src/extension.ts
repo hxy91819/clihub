@@ -1013,15 +1013,15 @@ export async function activate(context: vscode.ExtensionContext) {
       // 仅文件支持行号选择
       const startLine = capturedSelection.start.line + 1;
       const endLine = capturedSelection.end.line + 1;
-      textToSend = `@${relativePath} L${startLine}-${endLine} `;
+      textToSend = `${relativePath} L${startLine}-${endLine} `;
       try { log.debug(`[CLI Hub] Sending file with line selection: L${startLine}-${endLine}`); } catch { /* ignore */ }
     } else if (isDirectory) {
       // 目录路径以 / 结尾
       const dirPath = relativePath.endsWith('/') ? relativePath : `${relativePath}/`;
-      textToSend = `@${dirPath} `;
+      textToSend = `${dirPath} `;
       try { log.debug(`[CLI Hub] Sending directory path: ${dirPath}`); } catch { /* ignore */ }
     } else {
-      textToSend = `@${relativePath} `;
+      textToSend = `${relativePath} `;
       try { log.debug(`[CLI Hub] Sending file path: ${relativePath}`); } catch { /* ignore */ }
     }
 

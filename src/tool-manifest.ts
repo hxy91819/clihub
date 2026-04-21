@@ -12,10 +12,9 @@ export interface ToolManifestEntry {
 }
 
 const FALLBACK_PUBLIC_TOOLS: ToolManifestEntry[] = [
-  { id: 'codex', label: 'Codex', description: 'OpenAI Codex', command: 'codex', packageName: '@openai/codex' },
-  { id: 'opencode', label: 'OpenCode', description: 'Anomaly OpenCode', command: 'opencode', packageName: 'opencode-ai' },
   { id: 'claude', label: 'Claude Code', description: 'Anthropic Claude Code', command: 'claude', packageName: '@anthropic-ai/claude-code' },
   { id: 'codebuddy', label: 'Codebuddy', description: 'Tencent AI Codebuddy', command: 'codebuddy', packageName: '@tencent-ai/codebuddy-code' },
+  { id: 'codex', label: 'Codex', description: 'OpenAI Codex', command: 'codex', packageName: '@openai/codex' },
   { id: 'copilot', label: 'Copilot', description: 'GitHub Copilot CLI', command: 'copilot', packageName: '@github/copilot' },
   {
     id: 'cursor-agent',
@@ -25,6 +24,8 @@ const FALLBACK_PUBLIC_TOOLS: ToolManifestEntry[] = [
     installCommand: 'curl https://cursor.com/install -fsS | bash',
   },
   { id: 'gemini', label: 'Gemini CLI', description: 'Google Gemini CLI', command: 'gemini', packageName: '@google/gemini-cli' },
+  { id: 'kimi', label: 'Kimi CLI', description: 'Moonshot AI Kimi CLI', command: 'kimi', packageName: '@moonshot-ai/kimi-cli' },
+  { id: 'opencode', label: 'OpenCode', description: 'Anomaly OpenCode', command: 'opencode', packageName: 'opencode-ai' },
 ];
 
 function isNonEmptyString(value: unknown): value is string {
