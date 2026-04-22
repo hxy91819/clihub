@@ -4,6 +4,8 @@ out
 *.vsix
 .env
 .vscode-test
+config/tool-manifest.internal.json
+config/tool-manifest.json
 # BMAD (local only)
 .bmad-core/
 .bmad-*/
