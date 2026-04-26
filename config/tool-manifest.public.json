@@ -28,6 +28,12 @@
     "packageName": "@github/copilot"
   },
   {
+    "id": "droid",
+    "label": "Droid",
+    "description": "Droid AI CLI",
+    "command": "droid"
+  },
+  {
     "id": "cursor-agent",
     "label": "Cursor CLI",
     "description": "Cursor CLI (cursor-agent)",

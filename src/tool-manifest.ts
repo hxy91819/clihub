@@ -16,6 +16,7 @@ const FALLBACK_PUBLIC_TOOLS: ToolManifestEntry[] = [
   { id: 'codebuddy', label: 'Codebuddy', description: 'Tencent AI Codebuddy', command: 'codebuddy', packageName: '@tencent-ai/codebuddy-code' },
   { id: 'codex', label: 'Codex', description: 'OpenAI Codex', command: 'codex', packageName: '@openai/codex' },
   { id: 'copilot', label: 'Copilot', description: 'GitHub Copilot CLI', command: 'copilot', packageName: '@github/copilot' },
+  { id: 'droid', label: 'Droid', description: 'Droid AI CLI', command: 'droid' },
   {
     id: 'cursor-agent',
     label: 'Cursor CLI',
