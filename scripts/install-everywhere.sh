@@ -21,6 +21,11 @@ set -euo pipefail
 #   - CLI Hub VSIX into local Cursor
 #   - CLI Hub VSIX into local VS Code (when `code` CLI exists)
 #   - CLI Hub VSIX into remote Cursor Server, VS Code Server, and Codebuddy Server(s)
+#
+# Safety:
+#   - When no --vsix is provided, this script prefers the newest internal VSIX.
+#   - If a newer VSIX exists in the repo root, the script aborts to avoid silently
+#     installing a stale internal build.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -84,22 +89,31 @@ import os
 import sys
 
 repo_root = sys.argv[1]
-patterns = [
-    os.path.join(repo_root, "cli-hub-*-internal.vsix"),
-    os.path.join(repo_root, "cli-hub-*.vsix"),
-]
+internal_matches = glob.glob(os.path.join(repo_root, "cli-hub-*-internal.vsix"))
+all_matches = glob.glob(os.path.join(repo_root, "cli-hub-*.vsix"))
 
-matches = []
-for pattern in patterns:
-    matches.extend(glob.glob(pattern))
-    if matches:
-        break
-
-if not matches:
+if not all_matches:
     sys.exit(1)
 
-matches.sort(key=lambda path: os.path.getmtime(path), reverse=True)
-print(matches[0])
+latest_any = max(all_matches, key=os.path.getmtime)
+
+if not internal_matches:
+    print(latest_any)
+    sys.exit(0)
+
+latest_internal = max(internal_matches, key=os.path.getmtime)
+
+if os.path.abspath(latest_any) != os.path.abspath(latest_internal) and os.path.getmtime(latest_any) > os.path.getmtime(latest_internal):
+    print(
+        "Error: newest internal VSIX is older than the newest available VSIX. "
+        "Rebuild the internal package or pass --vsix explicitly.",
+        file=sys.stderr,
+    )
+    print(f"Internal candidate: {latest_internal}", file=sys.stderr)
+    print(f"Newest VSIX: {latest_any}", file=sys.stderr)
+    sys.exit(2)
+
+print(latest_internal)
 PY
 }
 

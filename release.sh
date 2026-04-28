@@ -154,8 +154,25 @@ if [ "$CURRENT_VERSION" = "$NEW_VERSION" ]; then
     fi
 fi
 
-cp "$TOOL_MANIFEST_PATH" "$ACTIVE_MANIFEST"
-echo "Active tool manifest prepared from: $TOOL_MANIFEST_PATH"
+RESOLVED_TOOL_MANIFEST_PATH="$(python3 - <<'PY' "$TOOL_MANIFEST_PATH"
+import os
+import sys
+print(os.path.abspath(sys.argv[1]))
+PY
+)"
+RESOLVED_ACTIVE_MANIFEST_PATH="$(python3 - <<'PY' "$ACTIVE_MANIFEST"
+import os
+import sys
+print(os.path.abspath(sys.argv[1]))
+PY
+)"
+
+if [ "$RESOLVED_TOOL_MANIFEST_PATH" != "$RESOLVED_ACTIVE_MANIFEST_PATH" ]; then
+    cp "$TOOL_MANIFEST_PATH" "$ACTIVE_MANIFEST"
+    echo "Active tool manifest prepared from: $TOOL_MANIFEST_PATH"
+else
+    echo "Active tool manifest already in place: $TOOL_MANIFEST_PATH"
+fi
 
 # 中文注释: 使用npm更新package.json和package-lock.json中的版本号
 if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
