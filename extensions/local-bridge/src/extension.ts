@@ -15,9 +15,29 @@ const ITERM2_WRITE_TEXT_SCRIPT = [
   '  end tell',
   'end run'
 ].join('\n');
+const MAX_ITERM2_TEXT_LENGTH = 4096;
+const CONTROL_CHARACTER_PATTERN = /[\x00-\x1F\x7F]/;
 
 export function buildIterm2WriteTextArgs(text: string): string[] {
   return ['-e', ITERM2_WRITE_TEXT_SCRIPT, text];
+}
+
+export function validateIterm2BridgeText(text: unknown): asserts text is string {
+  if (typeof text !== 'string') {
+    throw new Error('clihubLocal.writeToIterm2 requires a string argument.');
+  }
+
+  if (text.length === 0) {
+    throw new Error('clihubLocal.writeToIterm2 requires non-empty text.');
+  }
+
+  if (text.length > MAX_ITERM2_TEXT_LENGTH) {
+    throw new Error(`clihubLocal.writeToIterm2 text is too long. Maximum length is ${MAX_ITERM2_TEXT_LENGTH} characters.`);
+  }
+
+  if (CONTROL_CHARACTER_PATTERN.test(text)) {
+    throw new Error('clihubLocal.writeToIterm2 rejects newline and control characters.');
+  }
 }
 
 function execFileAsync(file: string, args: string[]): Promise<void> {
@@ -33,9 +53,7 @@ function execFileAsync(file: string, args: string[]): Promise<void> {
 }
 
 async function writeToIterm2(text: unknown): Promise<boolean> {
-  if (typeof text !== 'string') {
-    throw new Error('clihubLocal.writeToIterm2 requires a string argument.');
-  }
+  validateIterm2BridgeText(text);
 
   if (process.platform !== 'darwin') {
     throw new Error('CLI Hub Local Bridge iTerm2 sending is only supported on macOS.');

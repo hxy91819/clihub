@@ -81,4 +81,15 @@ describe('Unit: Local Bridge Routing', () => {
     assert.strictEqual(manifest.contributes?.commands, undefined);
     assert.strictEqual(manifest.publisher, 'MasonHuang');
   });
+
+  it('local bridge rejects newline and control-character payloads', () => {
+    const bridge = require('../../../extensions/local-bridge/out/extension') as {
+      validateIterm2BridgeText(text: unknown): void;
+    };
+
+    assert.doesNotThrow(() => bridge.validateIterm2BridgeText('src/file with spaces.ts L3-8 '));
+    assert.throws(() => bridge.validateIterm2BridgeText('src/file.ts\nwhoami'), /control characters/);
+    assert.throws(() => bridge.validateIterm2BridgeText('src/file.ts\x1b[200~'), /control characters/);
+    assert.throws(() => bridge.validateIterm2BridgeText(''), /non-empty/);
+  });
 });
