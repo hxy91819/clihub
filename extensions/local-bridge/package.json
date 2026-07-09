@@ -2,8 +2,9 @@
   "name": "cli-hub-local-bridge",
   "displayName": "CLI Hub Local Bridge",
   "description": "Local UI-host companion for CLI Hub Remote SSH iTerm2 writes.",
-  "version": "1.4.9",
+  "version": "1.4.10",
   "publisher": "MasonHuang",
+  "icon": "icons/cli-hub-local-bridge-icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/hxy91819/clihub.git"
