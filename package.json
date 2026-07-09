@@ -2,8 +2,8 @@
   "name": "cli-hub",
   "displayName": "CLI Hub: AI Tools Terminal",
   "description": "Open and manage multiple AI CLI terminal sessions in VS Code.",
-  "version": "1.4.5",
-  "publisher": "clihub",
+  "version": "1.4.6",
+  "publisher": "MasonHuang",
   "repository": {
     "type": "git",
     "url": "https://github.com/hxy91819/clihub.git"
@@ -21,6 +21,7 @@
     "onCommand:clihub.openTerminalEditor",
     "onCommand:clihub.openNewTerminalSession",
     "onCommand:clihub.sendPathToTerminal",
+    "onCommand:clihub.copyPathToClipboard",
     "onCommand:clihub.switchAITool",
     "onCommand:clihub.setGlobalDefaultTool",
     "onCommand:clihub.refreshDetection",
@@ -56,11 +57,25 @@
           "markdownDescription": "Controls where CLI Hub shows native terminals. Default `panel` keeps your current layout. Set to `right` to force the terminal panel to the right side.",
           "order": 5
         },
+        "clihub.pathSendTarget": {
+          "type": "string",
+          "enum": [
+            "vscodeTerminal",
+            "iterm2"
+          ],
+          "enumDescriptions": [
+            "Send path context to the routed CLI Hub terminal inside VS Code.",
+            "Send path context to the current iTerm2 session via macOS AppleScript."
+          ],
+          "default": "vscodeTerminal",
+          "markdownDescription": "Controls where `Send File Path to AI Tool Terminal` writes path context. Default `vscodeTerminal` keeps the existing CLI Hub terminal routing. Set to `iterm2` on macOS to write directly to iTerm2's current session via AppleScript; macOS Automation permission is required.",
+          "order": 6
+        },
         "clihub.toolArguments": {
           "type": "object",
           "default": {},
           "markdownDescription": "Custom command-line arguments for each AI tool. Use the tool id as the key. Common YOLO mode examples:\n- Copilot: `--allow-all-tools`\n- Claude: `--dangerously-skip-permissions`\n- Codebuddy: `--dangerously-skip-permissions`\n- Codex: `--full-auto`\n- Gemini: `--yolo`\n- Cursor Agent: `--force`\n- OpenCode: add the flags you prefer for your local workflow",
-          "order": 6,
+          "order": 7,
           "additionalProperties": {
             "type": "string"
           }
@@ -69,7 +84,7 @@
           "type": "object",
           "default": {},
           "markdownDescription": "Custom environment variables for each AI tool. Use the tool id as the key. Example:\n`\"clihub.toolEnvironments\": { \"claude\": { \"IS_SANDBOX\": \"1\" } }`",
-          "order": 7,
+          "order": 8,
           "additionalProperties": {
             "type": "object",
             "default": {},
@@ -98,6 +113,11 @@
       {
         "command": "clihub.sendPathToTerminal",
         "title": "Send File Path to AI Tool Terminal",
+        "category": "CLI Hub"
+      },
+      {
+        "command": "clihub.copyPathToClipboard",
+        "title": "Copy File Path to Clipboard",
         "category": "CLI Hub"
       },
       {
@@ -147,11 +167,20 @@
           "command": "clihub.sendPathToTerminal",
           "group": "navigation",
           "when": "editorFocus"
+        },
+        {
+          "command": "clihub.copyPathToClipboard",
+          "group": "navigation",
+          "when": "editorFocus"
         }
       ],
       "explorer/context": [
         {
           "command": "clihub.sendPathToTerminal",
+          "group": "navigation"
+        },
+        {
+          "command": "clihub.copyPathToClipboard",
           "group": "navigation"
         }
       ]

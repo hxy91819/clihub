@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import * as path from 'path';
 import { summarizeTerminalOptions, getTerminalOptions } from './terminal-utils';
 // Story 1.4: Argument parsing moved into a dedicated module for reuse and testability
@@ -54,6 +54,18 @@ const PYTHON_TERMINAL_ACTIVATE_SETTING = 'terminal.activateEnvironment';
 const PYTHON_ACTIVATION_RESET_DELAY_MS = 500;
 const PYTHON_EXTENSION_ID = 'ms-python.python';
 const PANEL_POSITION_RIGHT_COMMAND = 'workbench.action.positionPanelRight';
+const ITERM2_WRITE_TEXT_SCRIPT = [
+  'on run argv',
+  '  if (count of argv) is 0 then error "Missing text to write."',
+  '  set textToWrite to item 1 of argv',
+  '  tell application "iTerm2"',
+  '    if (count of windows) is 0 then error "No iTerm2 windows are open."',
+  '    tell current session of current window',
+  '      write text textToWrite newline NO',
+  '    end tell',
+  '  end tell',
+  'end run'
+].join('\n');
 
 /**
  * Configuration interface for custom CLI arguments per AI tool.
@@ -68,6 +80,8 @@ type ToolEnvironmentsConfig = Record<string, ToolEnvironmentValues>;
 type CodebuddyTerminalOptions = vscode.TerminalOptions & { isTransient?: boolean };
 type NativeTerminalLocation = 'panel' | 'right';
 type AIToolDescriptor = ToolManifestEntry;
+type SelectionLike = Pick<vscode.Selection, 'isEmpty' | 'start' | 'end'>;
+type PathSendTarget = 'vscodeTerminal' | 'iterm2';
 
 let availableTools: AIToolDescriptor[] = [];
 let manifestTools: AIToolDescriptor[] = [];
@@ -116,6 +130,25 @@ function normalizeWorkspacePath(workspacePath: string | vscode.Uri | undefined):
 // 包装文本为 bracketed paste 格式（用于 Gemini CLI 兼容）
 function wrapWithBracketedPaste(text: string): string {
   return `${BRACKETED_PASTE_START}${text}${BRACKETED_PASTE_END}`;
+}
+
+export function buildPathContextText(relativePath: string, isDirectory: boolean, selection?: SelectionLike): string {
+  if (selection && !selection.isEmpty && !isDirectory) {
+    const startLine = selection.start.line + 1;
+    const endLine = selection.end.line + 1;
+    return `${relativePath} L${startLine}-${endLine} `;
+  }
+
+  if (isDirectory) {
+    const dirPath = relativePath.endsWith('/') ? relativePath : `${relativePath}/`;
+    return `${dirPath} `;
+  }
+
+  return `${relativePath} `;
+}
+
+export function buildIterm2WriteTextArgs(text: string): string[] {
+  return ['-e', ITERM2_WRITE_TEXT_SCRIPT, text];
 }
 
 function delay(ms: number): Promise<void> {
@@ -607,6 +640,11 @@ function getNativeTerminalLocation(): NativeTerminalLocation {
   return location === 'right' ? 'right' : 'panel';
 }
 
+function getPathSendTarget(): PathSendTarget {
+  const target = getConfigValue<PathSendTarget>('pathSendTarget', 'vscodeTerminal');
+  return target === 'iterm2' ? 'iterm2' : 'vscodeTerminal';
+}
+
 async function applyNativeTerminalLocationPreference(): Promise<void> {
   if (getNativeTerminalLocation() !== 'right') {
     return;
@@ -687,6 +725,98 @@ async function switchCliInTerminal(terminal: vscode.Terminal, nextToolId: string
     try { log.error(`[CLI Hub] Failed to switch CLI in terminal: ${error instanceof Error ? error.message : String(error)}`); } catch { /* ignore */ }
     return false;
   }
+}
+
+function resolvePathTarget(uri?: vscode.Uri): { targetUri?: vscode.Uri; selection?: vscode.Selection } {
+  let targetUri: vscode.Uri | undefined = uri;
+  let capturedSelection: vscode.Selection | undefined;
+
+  if (!targetUri) {
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor && activeEditor.document.uri.scheme === 'file') {
+      targetUri = activeEditor.document.uri;
+      capturedSelection = activeEditor.selection;
+    }
+  } else {
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor && activeEditor.document.uri.toString() === targetUri.toString()) {
+      capturedSelection = activeEditor.selection;
+    }
+  }
+
+  return { targetUri, selection: capturedSelection };
+}
+
+async function buildPathContextTextForUri(targetUri: vscode.Uri, selection?: vscode.Selection): Promise<string | undefined> {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(targetUri);
+  if (!workspaceFolder) {
+    vscode.window.showWarningMessage('File is not in the workspace.');
+    return undefined;
+  }
+
+  const relativePath = vscode.workspace.asRelativePath(targetUri, false);
+
+  let isDirectory = false;
+  try {
+    const stat = await vscode.workspace.fs.stat(targetUri);
+    isDirectory = stat.type === vscode.FileType.Directory;
+    try { log.debug(`[CLI Hub] Path type detected: ${isDirectory ? 'directory' : 'file'} for ${relativePath}`); } catch { /* ignore */ }
+  } catch (err) {
+    try { log.debug(`[CLI Hub] fs.stat failed for ${relativePath}, assuming file. Error: ${err}`); } catch { /* ignore */ }
+    isDirectory = false;
+  }
+
+  const text = buildPathContextText(relativePath, isDirectory, selection);
+  if (selection && !selection.isEmpty && !isDirectory) {
+    try { log.debug(`[CLI Hub] Built file path with line selection: ${text.trimEnd()}`); } catch { /* ignore */ }
+  } else if (isDirectory) {
+    try { log.debug(`[CLI Hub] Built directory path: ${text.trimEnd()}`); } catch { /* ignore */ }
+  } else {
+    try { log.debug(`[CLI Hub] Built file path: ${text.trimEnd()}`); } catch { /* ignore */ }
+  }
+
+  return text;
+}
+
+function execFileAsync(file: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+async function sendTextToIterm2CurrentSession(text: string): Promise<boolean> {
+  if (process.platform !== 'darwin') {
+    vscode.window.showErrorMessage('iTerm2 external sending is only supported on macOS.');
+    return false;
+  }
+
+  try {
+    await execFileAsync('osascript', buildIterm2WriteTextArgs(text));
+    try { log.debug(`[CLI Hub] Sent to iTerm2 current session: ${text}`); } catch { /* ignore */ }
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    try { log.warn(`[CLI Hub] Failed to send to iTerm2 current session: ${message}`); } catch { /* ignore */ }
+    vscode.window.showErrorMessage(
+      `Failed to send to iTerm2 current session. Check iTerm2 is running and macOS Automation permission is granted. ${message}`
+    );
+    return false;
+  }
+}
+
+async function sendTextToConfiguredPathTarget(text: string): Promise<boolean> {
+  const target = getPathSendTarget();
+  if (target === 'iterm2') {
+    return sendTextToIterm2CurrentSession(text);
+  }
+
+  return false;
 }
 
 
@@ -946,30 +1076,25 @@ export async function activate(context: vscode.ExtensionContext) {
   });
 
   // 智能快捷键：打开终端或发送文件路径
-  const sendPathDisposable = vscode.commands.registerCommand('clihub.sendPathToTerminal', async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
+  const sendPathDisposable = vscode.commands.registerCommand('clihub.sendPathToTerminal', async (uri?: vscode.Uri, _uris?: vscode.Uri[]) => {
     try { log.debug('[CLI Hub] sendPathToTerminal: triggered'); } catch { /* ignore */ }
 
-    // 获取目标文件和选区
-    let targetUri: vscode.Uri | undefined = uri;
-    let capturedSelection: vscode.Selection | undefined;
-
-    if (!targetUri) {
-      const activeEditor = vscode.window.activeTextEditor;
-      if (activeEditor && activeEditor.document.uri.scheme === 'file') {
-        targetUri = activeEditor.document.uri;
-        capturedSelection = activeEditor.selection;
-      }
-    } else {
-      const activeEditor = vscode.window.activeTextEditor;
-      if (activeEditor && activeEditor.document.uri.toString() === targetUri.toString()) {
-        capturedSelection = activeEditor.selection;
-      }
-    }
+    const { targetUri, selection } = resolvePathTarget(uri);
 
     // 如果没有选中文件，直接打开或显示 terminal
     if (!targetUri) {
       try { log.debug('[CLI Hub] No file selected, opening/showing terminal'); } catch { /* ignore */ }
       await vscode.commands.executeCommand('clihub.openTerminalEditor');
+      return;
+    }
+
+    const textToSend = await buildPathContextTextForUri(targetUri, selection);
+    if (!textToSend) {
+      return;
+    }
+
+    if (getPathSendTarget() !== 'vscodeTerminal') {
+      await sendTextToConfiguredPathTarget(textToSend);
       return;
     }
 
@@ -987,44 +1112,6 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
 
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(targetUri);
-    if (!workspaceFolder) {
-      vscode.window.showWarningMessage('File is not in the workspace.');
-      return;
-    }
-
-    const relativePath = vscode.workspace.asRelativePath(targetUri, false);
-
-    // 检测是否为目录
-    let isDirectory = false;
-    try {
-      const stat = await vscode.workspace.fs.stat(targetUri);
-      isDirectory = stat.type === vscode.FileType.Directory;
-      try { log.debug(`[CLI Hub] Path type detected: ${isDirectory ? 'directory' : 'file'} for ${relativePath}`); } catch { /* ignore */ }
-    } catch (err) {
-      // 如果无法获取 stat，假设为文件
-      try { log.debug(`[CLI Hub] fs.stat failed for ${relativePath}, assuming file. Error: ${err}`); } catch { /* ignore */ }
-      isDirectory = false;
-    }
-
-    // 构造要发送的文本
-    let textToSend: string;
-    if (capturedSelection && !capturedSelection.isEmpty && !isDirectory) {
-      // 仅文件支持行号选择
-      const startLine = capturedSelection.start.line + 1;
-      const endLine = capturedSelection.end.line + 1;
-      textToSend = `${relativePath} L${startLine}-${endLine} `;
-      try { log.debug(`[CLI Hub] Sending file with line selection: L${startLine}-${endLine}`); } catch { /* ignore */ }
-    } else if (isDirectory) {
-      // 目录路径以 / 结尾
-      const dirPath = relativePath.endsWith('/') ? relativePath : `${relativePath}/`;
-      textToSend = `${dirPath} `;
-      try { log.debug(`[CLI Hub] Sending directory path: ${dirPath}`); } catch { /* ignore */ }
-    } else {
-      textToSend = `${relativePath} `;
-      try { log.debug(`[CLI Hub] Sending file path: ${relativePath}`); } catch { /* ignore */ }
-    }
-
     // 发送到终端：仅在 Gemini CLI 下使用 bracketed paste 包装
     try { log.debug(`[CLI Hub] Sending to terminal: ${textToSend}`); } catch { /* ignore */ }
     const targetToolId = getTerminalToolId(terminal) ?? currentToolId;
@@ -1032,6 +1119,25 @@ export async function activate(context: vscode.ExtensionContext) {
     terminal.sendText(payload, false);
     terminal.show();
     touchSession(terminal);
+  });
+
+  const copyPathDisposable = vscode.commands.registerCommand('clihub.copyPathToClipboard', async (uri?: vscode.Uri, _uris?: vscode.Uri[]) => {
+    try { log.debug('[CLI Hub] copyPathToClipboard: triggered'); } catch { /* ignore */ }
+
+    const { targetUri, selection } = resolvePathTarget(uri);
+    if (!targetUri) {
+      vscode.window.showWarningMessage('Select a file or directory to copy its path context.');
+      return;
+    }
+
+    const textToCopy = await buildPathContextTextForUri(targetUri, selection);
+    if (!textToCopy) {
+      return;
+    }
+
+    await vscode.env.clipboard.writeText(textToCopy);
+    vscode.window.showInformationMessage(`Copied: ${textToCopy.trimEnd()}`);
+    try { log.debug(`[CLI Hub] Copied to clipboard: ${textToCopy}`); } catch { /* ignore */ }
   });
 
   // 重新检测 CLI 命令安装状态的命令
@@ -1080,6 +1186,7 @@ export async function activate(context: vscode.ExtensionContext) {
     openTerminalEditorDisposable,
     openNewTerminalSessionDisposable,
     sendPathDisposable,
+    copyPathDisposable,
     refreshDetectionDisposable,
     showLogsDisposable,
     switchAIToolDisposable,

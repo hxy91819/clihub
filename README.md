@@ -22,11 +22,13 @@ Use the keyboard shortcut `Cmd+Shift+J` (Mac) or `Ctrl+Shift+J` (Windows/Linux) 
 **In Editor (requires editor focus):**
 - **Without selection**: Sends the current file's relative path
 - **With selection**: Sends the file path along with the selected line range
-- Example: `@src/extension.ts L10-20 `
+- Example: `src/extension.ts L10-20 `
 
 **Alternative Methods:**
 - Right-click a file or directory in Explorer and select "Send File Path to AI Tool Terminal" (directories include trailing `/`)
+- Right-click in the editor or Explorer and select "Copy File Path to Clipboard" to copy the same path context without opening or sending to a terminal
 - Use Command Palette: `CLI Hub: Send File Path to AI Tool Terminal`
+- Use Command Palette: `CLI Hub: Copy File Path to Clipboard`
 - New session shortcut: `Cmd+Ctrl+Shift+J` (Mac) / `Ctrl+Alt+Shift+J` (Windows/Linux)
 
 ### 3. Switch Between AI Tools
@@ -43,6 +45,18 @@ Use the keyboard shortcut `Cmd+Shift+J` (Mac) or `Ctrl+Shift+J` (Windows/Linux) 
 
 > `clihub.terminalOpenMode` and `clihub.moveNativeTerminalToRight` are removed.  
 > Reason: editor mode introduced extra editor-group locking/layout timing complexity and made multi-session active-routing less stable. The extension is now native-only to reduce regressions.
+
+### `clihub.pathSendTarget`
+Controls where `Send File Path to AI Tool Terminal` writes path context.
+
+- `vscodeTerminal`: default. Uses CLI Hub's active/recent/create VS Code terminal routing.
+- `iterm2`: macOS only. Writes directly to iTerm2's current session via AppleScript without using the clipboard. iTerm2 must be running, and macOS Automation permission for VS Code is required.
+
+```json
+{
+  "clihub.pathSendTarget": "iterm2"
+}
+```
 
 ### `clihub.toolArguments`
 Configure `clihub.toolArguments` in VS Code `settings.json` (or via the Settings UI) to append extra CLI flags when the extension launches each supported tool. Every value defaults to an empty string.
@@ -120,6 +134,16 @@ This is useful when a CLI must be launched with both env vars and flags, such as
 2. For non-public builds, inject an external manifest through the release pipeline instead of committing private tool definitions to this repository.
 3. Update `README.md`, `README.zh-CN.md`, and `CHANGELOG.md` so users know how the new tool is installed and used.
 4. Run `npm run compile` and validate terminal routing in an Extension Development Host.
+
+## Developer Install Script
+`npm run install:everywhere` installs Codebuddy CLI and the selected VSIX for local/remote testing. By default, extension installation targets only VS Code (`code` locally and `.vscode-server` remotely).
+
+To include other VS Code-like IDEs explicitly:
+
+```bash
+bash ./scripts/install-everywhere.sh --local-editors "code=VS Code,cursor=Cursor"
+CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/install-everywhere.sh
+```
 
 ## Supported Tools
 

@@ -10,10 +10,12 @@
 - 每个会话记录：`terminal`、`toolId`、`workspacePath`、`createdAt`、`lastActiveAt`。
 
 ### 2) 路由优先级
-`clihub.sendPathToTerminal` 发送目标规则：
+当 `clihub.pathSendTarget = "vscodeTerminal"`（默认值）时，`clihub.sendPathToTerminal` 发送目标规则：
 1. 当前激活终端（必须是 CLI Hub 且 tool 匹配）
 2. 最近活跃且 tool/workspace/environment 均匹配的会话
 3. 若都不存在，自动创建新会话再发送
+
+当 `clihub.pathSendTarget = "iterm2"` 时，`clihub.sendPathToTerminal` 会通过 macOS AppleScript 写入 iTerm2 当前窗口的 current session，不创建或复用 VS Code 终端。该模式需要 iTerm2 正在运行，并授予 VS Code Automation 权限。
 
 ### 3) 打开终端
 - `clihub.openTerminalEditor`：复用优先（激活 > 最近活跃 > 新建），但仅复用与当前 workspace 和工具环境匹配的会话

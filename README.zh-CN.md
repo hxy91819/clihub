@@ -30,15 +30,17 @@
 
 **场景 2：终端已打开**
 - 按 `Cmd+Shift+J` (Mac) 或 `Ctrl+Shift+J` (Windows/Linux)（需编辑器有焦点）
-- **没有选中代码**：发送当前文件的相对路径（如 `@src/extension.ts `）
-- **选中代码**：发送文件路径和选中的行号范围（如 `@src/extension.ts L10-20 `）
+- **没有选中代码**：发送当前文件的相对路径（如 `src/extension.ts `）
+- **选中代码**：发送文件路径和选中的行号范围（如 `src/extension.ts L10-20 `）
 - 自动使用 bracketed paste 格式，保证与各种 CLI 工具的兼容性
 - 新增快捷键：`Cmd+Ctrl+Shift+J` (Mac) / `Ctrl+Alt+Shift+J` (Windows/Linux) 用于强制新建会话
 
 **其他使用方式：**
 - 在编辑器中右键点击，选择"Send File Path to AI Tool Terminal"
 - 在资源管理器中右键点击文件或目录，选择"Send File Path to AI Tool Terminal"（目录路径以 `/` 结尾）
+- 在编辑器或资源管理器中右键点击，选择"Copy File Path to Clipboard"，可复制同样的路径上下文但不打开、不发送到终端
 - 使用命令面板：`CLI Hub: Send File Path to AI Tool Terminal`
+- 使用命令面板：`CLI Hub: Copy File Path to Clipboard`
 
 ### 3. 多 AI 工具一键切换
 - 内置 Codebuddy、Gemini CLI、Claude Code、Codex、OpenCode、GitHub Copilot CLI、Cursor CLI，多工具列表随时扩展
@@ -68,6 +70,18 @@
 ```json
 {
   "clihub.nativeTerminalLocation": "right"
+}
+```
+
+### `clihub.pathSendTarget`
+控制 `Send File Path to AI Tool Terminal` 把路径上下文写到哪里：
+
+- `vscodeTerminal`：默认值，沿用 CLI Hub 的“激活终端 > 最近会话 > 自动新建”VS Code 终端路由。
+- `iterm2`：仅 macOS 可用，通过 AppleScript 直接写入 iTerm2 当前窗口的 current session，不依赖剪贴板；需要 iTerm2 正在运行，并授予 VS Code macOS Automation 权限。
+
+```json
+{
+  "clihub.pathSendTarget": "iterm2"
 }
 ```
 
@@ -124,6 +138,16 @@
 2. 如需构建非公开版工具集，在 release 流程中通过 `--tool-manifest` 注入外部 manifest，不要把私有工具定义提交到开源仓库。
 3. 更新 `README.md`、`README.zh-CN.md`、`CHANGELOG.md` 等文档，确保用户了解新工具的支持与安装方式。
 4. 运行 `npm run compile` 确认类型检查通过，并在扩展开发主机中手动验证终端切换逻辑。
+
+## 开发者安装脚本
+`npm run install:everywhere` 用于本地/远端测试安装 Codebuddy CLI 和选中的 VSIX。默认只把扩展安装到 VS Code（本地 `code`、远端 `.vscode-server`）。
+
+如需显式包含其他 VS Code-like IDE：
+
+```bash
+bash ./scripts/install-everywhere.sh --local-editors "code=VS Code,cursor=Cursor"
+CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/install-everywhere.sh
+```
 
 ## 当前内置工具
 
