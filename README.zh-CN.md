@@ -2,7 +2,7 @@
 
 [English](./README.md) | 中文
 
-**当前版本**: cli-hub-1.4.3.vsix
+**当前版本**: cli-hub-1.4.7.vsix
 
 一个轻量级的 VS Code 扩展，将多种 AI CLI 工具直接集成到编辑器中，支持多 Terminal 会话、激活会话路由和快速发送文件路径。
 
