@@ -145,6 +145,17 @@ bash ./scripts/install-everywhere.sh --local-editors "code=VS Code,cursor=Cursor
 CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/install-everywhere.sh
 ```
 
+## Release Publishing
+Pushing a `v*` tag runs the release workflow. It tests, packages `cli-hub-<version>-public.vsix`, uploads it to GitHub Releases, and publishes the same VSIX to the VS Code Marketplace when the repository secret `VSCE_PAT` is configured.
+
+Create the Marketplace token from the Visual Studio Marketplace publisher portal, then store it as a GitHub Actions repository secret named `VSCE_PAT`:
+
+```bash
+gh secret set VSCE_PAT --repo hxy91819/clihub
+```
+
+Do not commit the token or paste it into workflow files.
+
 ## Supported Tools
 
 | Tool ID | Display Name | Command | Default install command |
