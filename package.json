@@ -2,7 +2,7 @@
   "name": "cli-hub",
   "displayName": "CLI Hub: AI Tools Terminal",
   "description": "Open and manage multiple AI CLI terminal sessions in VS Code.",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "publisher": "MasonHuang",
   "repository": {
     "type": "git",
@@ -187,7 +187,12 @@
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && tsc -p ./extensions/local-bridge",
+    "compile:main": "tsc -p ./",
+    "compile:bridge": "tsc -p ./extensions/local-bridge",
+    "package:dev": "bash ./release.sh $(node -p \"require('./package.json').version\") --force --channel public --dev-build",
+    "install:dev": "CLIHUB_REMOTE_HOST=dev-server bash ./scripts/install-dev-vsix.sh",
+    "install:dev:cursor-main": "CLIHUB_EDITOR=cursor CLIHUB_REMOTE_HOST=dev-server CLIHUB_MAIN_ONLY=true bash ./scripts/install-dev-vsix.sh",
     "watch": "tsc -w -p ./",
     "pretest": "npm run compile",
     "test": "node ./out/test/runTest.js",

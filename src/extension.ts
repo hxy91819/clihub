@@ -54,6 +54,8 @@ const PYTHON_TERMINAL_ACTIVATE_SETTING = 'terminal.activateEnvironment';
 const PYTHON_ACTIVATION_RESET_DELAY_MS = 500;
 const PYTHON_EXTENSION_ID = 'ms-python.python';
 const PANEL_POSITION_RIGHT_COMMAND = 'workbench.action.positionPanelRight';
+const LOCAL_BRIDGE_WRITE_COMMAND = 'clihubLocal.writeToIterm2';
+const LOCAL_BRIDGE_EXTENSION_ID = 'MasonHuang.cli-hub-local-bridge';
 const ITERM2_WRITE_TEXT_SCRIPT = [
   'on run argv',
   '  if (count of argv) is 0 then error "Missing text to write."',
@@ -150,6 +152,10 @@ export function buildPathContextText(relativePath: string, isDirectory: boolean,
 
 export function buildIterm2WriteTextArgs(text: string): string[] {
   return ['-e', ITERM2_WRITE_TEXT_SCRIPT, text];
+}
+
+export function shouldUseLocalIterm2Bridge(pathSendTarget: PathSendTarget, remoteName: string | undefined): boolean {
+  return pathSendTarget === 'iterm2' && Boolean(remoteName);
 }
 
 function delay(ms: number): Promise<void> {
@@ -811,13 +817,110 @@ async function sendTextToIterm2CurrentSession(text: string): Promise<boolean> {
   }
 }
 
-async function sendTextToConfiguredPathTarget(text: string): Promise<boolean> {
-  const target = getPathSendTarget();
-  if (target === 'iterm2') {
-    return sendTextToIterm2CurrentSession(text);
+async function openLocalBridgeInstallEntry(): Promise<void> {
+  try {
+    await vscode.commands.executeCommand('workbench.extensions.installExtension', LOCAL_BRIDGE_EXTENSION_ID);
+    return;
+  } catch (error) {
+    try { log.warn(`[CLI Hub] Failed to start Local Bridge install directly: ${error instanceof Error ? error.message : String(error)}`); } catch { /* ignore */ }
   }
 
-  return false;
+  try {
+    await vscode.commands.executeCommand('workbench.extensions.search', `@id:${LOCAL_BRIDGE_EXTENSION_ID}`);
+  } catch (error) {
+    try { log.warn(`[CLI Hub] Failed to open Local Bridge marketplace search: ${error instanceof Error ? error.message : String(error)}`); } catch { /* ignore */ }
+  }
+}
+
+async function promptForMissingLocalBridge(): Promise<'fallback' | 'install' | undefined> {
+  const installAction = 'Install CLI Hub Local Bridge';
+  const fallbackAction = 'Send to VS Code Terminal';
+  const selection = await vscode.window.showWarningMessage(
+    'Remote SSH needs CLI Hub Local Bridge installed locally to write to iTerm2.',
+    installAction,
+    fallbackAction
+  );
+
+  if (selection === installAction) {
+    await openLocalBridgeInstallEntry();
+    return 'install';
+  }
+
+  if (selection === fallbackAction) {
+    return 'fallback';
+  }
+
+  return undefined;
+}
+
+async function promptForLocalBridgeFailure(message: string): Promise<'fallback' | undefined> {
+  const fallbackAction = 'Send to VS Code Terminal';
+  const selection = await vscode.window.showErrorMessage(
+    `Failed to send to local iTerm2 through CLI Hub Local Bridge. ${message}`,
+    fallbackAction
+  );
+
+  return selection === fallbackAction ? 'fallback' : undefined;
+}
+
+async function sendTextToLocalIterm2Bridge(text: string): Promise<'sent' | 'fallback' | 'cancelled'> {
+  try {
+    const result = await vscode.commands.executeCommand<boolean | void>(LOCAL_BRIDGE_WRITE_COMMAND, text);
+    if (result === false) {
+      const choice = await promptForLocalBridgeFailure('The bridge command returned false.');
+      return choice === 'fallback' ? 'fallback' : 'cancelled';
+    }
+    try { log.debug(`[CLI Hub] Sent to local iTerm2 through bridge: ${text}`); } catch { /* ignore */ }
+    return 'sent';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    try { log.warn(`[CLI Hub] Local Bridge send failed: ${message}`); } catch { /* ignore */ }
+
+    if (/command .*not found|not found/i.test(message)) {
+      const choice = await promptForMissingLocalBridge();
+      return choice === 'fallback' ? 'fallback' : 'cancelled';
+    }
+
+    const choice = await promptForLocalBridgeFailure(message);
+    return choice === 'fallback' ? 'fallback' : 'cancelled';
+  }
+}
+
+type PathTargetSendResult = 'sent' | 'fallback' | 'cancelled';
+
+async function sendTextToConfiguredPathTarget(text: string): Promise<PathTargetSendResult> {
+  const target = getPathSendTarget();
+  if (target === 'iterm2') {
+    if (shouldUseLocalIterm2Bridge(target, vscode.env.remoteName)) {
+      return sendTextToLocalIterm2Bridge(text);
+    }
+    return (await sendTextToIterm2CurrentSession(text)) ? 'sent' : 'cancelled';
+  }
+
+  return 'fallback';
+}
+
+async function sendTextToVsCodeTerminalTarget(context: vscode.ExtensionContext, textToSend: string): Promise<boolean> {
+  currentToolId = resolveToolId(context);
+  updateStatusBar(currentToolId, context);
+
+  let terminal = resolveTargetTerminalForSend(currentToolId);
+  if (!terminal) {
+    try { log.debug('[CLI Hub] sendPath: no terminal resolved, opening terminal with reuse-first routing'); } catch { /* ignore */ }
+    terminal = await vscode.commands.executeCommand<vscode.Terminal | undefined>('clihub.openTerminalEditor');
+    if (!terminal) {
+      try { log.warn('[CLI Hub] Failed to resolve terminal after creating session'); } catch { /* ignore */ }
+      return false;
+    }
+  }
+
+  try { log.debug(`[CLI Hub] Sending to terminal: ${textToSend}`); } catch { /* ignore */ }
+  const targetToolId = getTerminalToolId(terminal) ?? currentToolId;
+  const payload = targetToolId === 'gemini' ? wrapWithBracketedPaste(textToSend) : textToSend;
+  terminal.sendText(payload, false);
+  terminal.show();
+  touchSession(terminal);
+  return true;
 }
 
 
@@ -1069,11 +1172,11 @@ export async function activate(context: vscode.ExtensionContext) {
   const setGlobalDefaultToolDisposable = vscode.commands.registerCommand('clihub.setGlobalDefaultTool', setGlobalDefaultToolHandler);
 
   const openTerminalEditorDisposable = vscode.commands.registerCommand('clihub.openTerminalEditor', async () => {
-    await openTerminalForCurrentTool(false);
+    return openTerminalForCurrentTool(false);
   });
 
   const openNewTerminalSessionDisposable = vscode.commands.registerCommand('clihub.openNewTerminalSession', async () => {
-    await openTerminalForCurrentTool(true);
+    return openTerminalForCurrentTool(true);
   });
 
   // 智能快捷键：打开终端或发送文件路径
@@ -1095,31 +1198,14 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     if (getPathSendTarget() !== 'vscodeTerminal') {
-      await sendTextToConfiguredPathTarget(textToSend);
+      const result = await sendTextToConfiguredPathTarget(textToSend);
+      if (result === 'fallback') {
+        await sendTextToVsCodeTerminalTarget(context, textToSend);
+      }
       return;
     }
 
-    // 有文件选中，确保 terminal 存在
-    currentToolId = resolveToolId(context);
-    updateStatusBar(currentToolId, context);
-
-    let terminal = resolveTargetTerminalForSend(currentToolId);
-    if (!terminal) {
-      try { log.debug('[CLI Hub] sendPath: no terminal resolved, opening terminal with reuse-first routing'); } catch { /* ignore */ }
-      terminal = await openTerminalForCurrentTool(false);
-      if (!terminal) {
-        try { log.warn('[CLI Hub] Failed to resolve terminal after creating session'); } catch { /* ignore */ }
-        return;
-      }
-    }
-
-    // 发送到终端：仅在 Gemini CLI 下使用 bracketed paste 包装
-    try { log.debug(`[CLI Hub] Sending to terminal: ${textToSend}`); } catch { /* ignore */ }
-    const targetToolId = getTerminalToolId(terminal) ?? currentToolId;
-    const payload = targetToolId === 'gemini' ? wrapWithBracketedPaste(textToSend) : textToSend;
-    terminal.sendText(payload, false);
-    terminal.show();
-    touchSession(terminal);
+    await sendTextToVsCodeTerminalTarget(context, textToSend);
   });
 
   const copyPathDisposable = vscode.commands.registerCommand('clihub.copyPathToClipboard', async (uri?: vscode.Uri, _uris?: vscode.Uri[]) => {

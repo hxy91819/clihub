@@ -1,0 +1,32 @@
+{
+  "name": "cli-hub-local-bridge",
+  "displayName": "CLI Hub Local Bridge",
+  "description": "Local UI-host companion for CLI Hub Remote SSH iTerm2 writes.",
+  "version": "1.4.8",
+  "publisher": "MasonHuang",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hxy91819/clihub.git"
+  },
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onCommand:clihubLocal.writeToIterm2"
+  ],
+  "scripts": {
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "@types/vscode": "1.99.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -44,4 +44,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cli-hub-public-vsix
-          path: cli-hub-*-public.vsix
+          path: |
+            cli-hub-[0-9]*-public.vsix
+            cli-hub-local-bridge-*-public.vsix

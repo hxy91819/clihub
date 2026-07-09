@@ -13,6 +13,11 @@ set -euo pipefail
 #   4) Build a new version for internal release:
 #      bash ./release.sh 1.4.4 --channel internal \
 #        --tool-manifest /absolute/path/to/tool-manifest.internal.json
+#   5) Build local development packages with a visible dev version:
+#      bash ./release.sh 1.4.7 --force --channel public --dev-build
+#      bash ./release.sh 1.4.7 --force --channel public --dev-build bridge-test
+#      CLIHUB_DEV_BUILD_LABEL=bridge-test bash ./release.sh 1.4.7 --force --channel public --dev-build
+#      # Produces packages like 1.4.8-dev.20260709185312 so VS Code treats them as newer than 1.4.7.
 #
 # Notes:
 #   - Run from the repository root.
@@ -32,10 +37,11 @@ set -euo pipefail
 # 3) 目标版本与当前版本相同但未显式 --force（会报错退出）:
 #    ./release.sh 0.1.0
 # 4) 误以为该脚本会发布到 VS Code Marketplace（它只会 compile + vsce package 生成 .vsix）
+# 5) 用 --dev-build 做正式发布（开发版本号仅用于本地调试包）
 
 # 中文注释: 检查输入参数是否合法
 if [ "$#" -lt 1 ]; then
-    echo "Usage: ./release.sh <new_version> [--force] [--channel public|internal] [--tool-manifest /path/to/manifest.json]"  # 日志使用英文
+    echo "Usage: ./release.sh <new_version> [--force] [--channel public|internal] [--tool-manifest /path/to/manifest.json] [--dev-build [label]]"  # 日志使用英文
     exit 1
 fi
 
@@ -43,6 +49,8 @@ NEW_VERSION="$1"
 FORCE=false
 CHANNEL="public"
 TOOL_MANIFEST_PATH=""
+DEV_BUILD=false
+DEV_LABEL=""
 
 shift
 
@@ -68,6 +76,15 @@ while [ "$#" -gt 0 ]; do
             TOOL_MANIFEST_PATH="$2"
             shift 2
             ;;
+        --dev-build)
+            DEV_BUILD=true
+            if [ "$#" -ge 2 ] && [[ ! "$2" =~ ^-- ]]; then
+                DEV_LABEL="$2"
+                shift 2
+            else
+                shift
+            fi
+            ;;
         *)
             echo "Error: unknown argument: $1"
             exit 1
@@ -89,6 +106,9 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+PACKAGE_JSON="$SCRIPT_DIR/package.json"
+PACKAGE_LOCK="$SCRIPT_DIR/package-lock.json"
+BRIDGE_PACKAGE_JSON="$SCRIPT_DIR/extensions/local-bridge/package.json"
 PUBLIC_MANIFEST="$SCRIPT_DIR/config/tool-manifest.public.json"
 ACTIVE_MANIFEST="$SCRIPT_DIR/config/tool-manifest.json"
 
@@ -118,12 +138,31 @@ if [ -f "$ACTIVE_MANIFEST" ]; then
     cp "$ACTIVE_MANIFEST" "$BACKUP_MANIFEST"
 fi
 
+BACKUP_PACKAGE_JSON=""
+BACKUP_PACKAGE_LOCK=""
+BACKUP_BRIDGE_PACKAGE_JSON=""
+if [ "$DEV_BUILD" = true ]; then
+    BACKUP_PACKAGE_JSON="$(mktemp)"
+    BACKUP_PACKAGE_LOCK="$(mktemp)"
+    BACKUP_BRIDGE_PACKAGE_JSON="$(mktemp)"
+    cp "$PACKAGE_JSON" "$BACKUP_PACKAGE_JSON"
+    cp "$PACKAGE_LOCK" "$BACKUP_PACKAGE_LOCK"
+    cp "$BRIDGE_PACKAGE_JSON" "$BACKUP_BRIDGE_PACKAGE_JSON"
+fi
+
 cleanup() {
     if [ "$ORIGINAL_MANIFEST_PRESENT" = true ]; then
         cp "$BACKUP_MANIFEST" "$ACTIVE_MANIFEST"
         rm -f "$BACKUP_MANIFEST"
     else
         rm -f "$ACTIVE_MANIFEST"
+    fi
+
+    if [ "$DEV_BUILD" = true ]; then
+        cp "$BACKUP_PACKAGE_JSON" "$PACKAGE_JSON"
+        cp "$BACKUP_PACKAGE_LOCK" "$PACKAGE_LOCK"
+        cp "$BACKUP_BRIDGE_PACKAGE_JSON" "$BRIDGE_PACKAGE_JSON"
+        rm -f "$BACKUP_PACKAGE_JSON" "$BACKUP_PACKAGE_LOCK" "$BACKUP_BRIDGE_PACKAGE_JSON"
     fi
 }
 
@@ -142,10 +181,39 @@ CURRENT_VERSION=$(node -p "require('./package.json').version")
 
 echo "Current version: ${CURRENT_VERSION}"
 
-echo "Target version: ${NEW_VERSION}"
-echo "Release channel: ${CHANNEL}"
+PACKAGE_VERSION="$NEW_VERSION"
+if [ "$DEV_BUILD" = true ]; then
+    if [ -z "$DEV_LABEL" ] && [ -n "${CLIHUB_DEV_BUILD_LABEL:-}" ]; then
+        DEV_LABEL="$CLIHUB_DEV_BUILD_LABEL"
+    fi
+    if [ -z "$DEV_LABEL" ]; then
+        DEV_LABEL="$(date +%Y%m%d%H%M%S)"
+    fi
+    DEV_LABEL="$(printf '%s' "$DEV_LABEL" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^0-9a-z-]+/-/g; s/^-+//; s/-+$//')"
+    if [ -z "$DEV_LABEL" ]; then
+        echo "Error: --dev-build label must contain at least one alphanumeric character"
+        exit 1
+    fi
+    DEV_BASE_VERSION="$(node - <<NODE
+const semver = require('semver');
+const next = semver.inc('$NEW_VERSION', 'patch');
+if (!next) {
+  process.exit(1);
+}
+process.stdout.write(next);
+NODE
+)"
+    PACKAGE_VERSION="${DEV_BASE_VERSION}-dev.${DEV_LABEL}"
+fi
 
-if [ "$CURRENT_VERSION" = "$NEW_VERSION" ]; then
+echo "Target version: ${NEW_VERSION}"
+echo "Package version: ${PACKAGE_VERSION}"
+echo "Release channel: ${CHANNEL}"
+if [ "$DEV_BUILD" = true ]; then
+    echo "Development build: true"
+fi
+
+if [ "$DEV_BUILD" = false ] && [ "$CURRENT_VERSION" = "$NEW_VERSION" ]; then
     if [ "$FORCE" = false ]; then
         echo "Error: new version equals current version. Use --force to override."
         exit 1
@@ -175,12 +243,25 @@ else
 fi
 
 # 中文注释: 使用npm更新package.json和package-lock.json中的版本号
-if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+if [ "$DEV_BUILD" = true ]; then
+    npm version "$PACKAGE_VERSION" --no-git-tag-version >/dev/null
+    echo "package.json and package-lock.json updated for development build"
+elif [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
     npm version "$NEW_VERSION" --no-git-tag-version >/dev/null
     echo "package.json and package-lock.json updated"
 else
     echo "Skipping version update (same version)"
 fi
+
+node <<NODE
+const fs = require('fs');
+const path = require('path');
+const bridgePackagePath = path.join('$SCRIPT_DIR', 'extensions', 'local-bridge', 'package.json');
+const bridgePackage = JSON.parse(fs.readFileSync(bridgePackagePath, 'utf8'));
+bridgePackage.version = '$PACKAGE_VERSION';
+fs.writeFileSync(bridgePackagePath, JSON.stringify(bridgePackage, null, 2) + '\n');
+console.log('Local Bridge package.json updated');
+NODE
 
 # 中文注释: 更新README中的版本信息（如果存在版本引用）
 python3 <<PY
@@ -195,7 +276,7 @@ text = readme_path.read_text(encoding='utf-8')
 # 查找并更新 .vsix 文件名中的版本号
 pattern = r"cli-hub-[0-9]+\.[0-9]+\.[0-9]+\.vsix"
 replacement = f"cli-hub-{ '$NEW_VERSION' }.vsix"
-if re.search(pattern, text):
+if '$DEV_BUILD' == 'false' and re.search(pattern, text):
     readme_path.write_text(re.sub(pattern, replacement, text), encoding='utf-8')
     print("README.md updated with new version")
 else:
@@ -211,24 +292,31 @@ echo "Build finished"
 npm run compile
 
 # 中文注释: 打包VSCode扩展 (自动安装vsce)
-PACKAGE_NAME="cli-hub-${NEW_VERSION}-${CHANNEL}.vsix"
+PACKAGE_NAME="cli-hub-${PACKAGE_VERSION}-${CHANNEL}.vsix"
 npx --yes vsce package --out "$PACKAGE_NAME"
 
-echo "Release package generated"
+BRIDGE_PACKAGE_NAME="cli-hub-local-bridge-${PACKAGE_VERSION}-${CHANNEL}.vsix"
+(
+    cd "$SCRIPT_DIR/extensions/local-bridge"
+    npx --yes vsce package --out "$SCRIPT_DIR/$BRIDGE_PACKAGE_NAME"
+)
+
+echo "Release packages generated"
 
 # 中文注释: 复制VSIX文件到部署目录
-VSIX_FILE="$PACKAGE_NAME"
 if [ -n "${VSIX_DEPLOY_PATH:-}" ]; then
-    if [ -f "$VSIX_FILE" ]; then
-        # 创建目标目录（如果不存在）
-        mkdir -p "$VSIX_DEPLOY_PATH"
-        # 复制文件
-        cp "$VSIX_FILE" "$VSIX_DEPLOY_PATH/"
-        echo "VSIX file copied to: $VSIX_DEPLOY_PATH/$VSIX_FILE"
-    else
-        echo "Error: VSIX file $VSIX_FILE not found"
-        exit 1
-    fi
+    # 创建目标目录（如果不存在）
+    mkdir -p "$VSIX_DEPLOY_PATH"
+    for VSIX_FILE in "$PACKAGE_NAME" "$BRIDGE_PACKAGE_NAME"; do
+        if [ -f "$VSIX_FILE" ]; then
+            # 复制文件
+            cp "$VSIX_FILE" "$VSIX_DEPLOY_PATH/"
+            echo "VSIX file copied to: $VSIX_DEPLOY_PATH/$VSIX_FILE"
+        else
+            echo "Error: VSIX file $VSIX_FILE not found"
+            exit 1
+        fi
+    done
 else
     echo "Warning: VSIX_DEPLOY_PATH not set, skipping file copy"
 fi

@@ -15,7 +15,9 @@
 2. 最近活跃且 tool/workspace/environment 均匹配的会话
 3. 若都不存在，自动创建新会话再发送
 
-当 `clihub.pathSendTarget = "iterm2"` 时，`clihub.sendPathToTerminal` 会通过 macOS AppleScript 写入 iTerm2 当前窗口的 current session，不创建或复用 VS Code 终端。该模式需要 iTerm2 正在运行，并授予 VS Code Automation 权限。
+当 `clihub.pathSendTarget = "iterm2"` 时，`clihub.sendPathToTerminal` 不创建或复用 VS Code 终端：
+- 本地窗口：主扩展直接通过 macOS AppleScript 写入 iTerm2 当前窗口的 current session。该模式需要 iTerm2 正在运行，并授予 VS Code Automation 权限。
+- Remote SSH 窗口：主扩展运行在远端 extension host，不执行远端 `osascript`；它调用本机 UI extension host 中 companion 扩展提供的 `clihubLocal.writeToIterm2(text)`。若 companion 缺失，提示安装 `MasonHuang.cli-hub-local-bridge`，并提供回退到 VS Code terminal 路由的操作。
 
 ### 3) 打开终端
 - `clihub.openTerminalEditor`：复用优先（激活 > 最近活跃 > 新建），但仅复用与当前 workspace 和工具环境匹配的会话

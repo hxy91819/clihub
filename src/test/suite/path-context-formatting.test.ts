@@ -1,5 +1,7 @@
 import * as assert from 'assert';
-import { buildIterm2WriteTextArgs, buildPathContextText } from '../../extension';
+import * as fs from 'fs';
+import * as path from 'path';
+import { buildIterm2WriteTextArgs, buildPathContextText, shouldUseLocalIterm2Bridge } from '../../extension';
 
 function selection(startLine: number, endLine: number, isEmpty = false) {
   return {
@@ -60,5 +62,23 @@ describe('Unit: iTerm2 AppleScript Arguments', () => {
     assert.ok(args[1].includes('on run argv'));
     assert.ok(!args[1].includes(text));
     assert.strictEqual(args[2], text);
+  });
+});
+
+describe('Unit: Local Bridge Routing', () => {
+  it('uses the local bridge only for iTerm2 sends from a remote extension host', () => {
+    assert.strictEqual(shouldUseLocalIterm2Bridge('iterm2', 'ssh-remote'), true);
+    assert.strictEqual(shouldUseLocalIterm2Bridge('iterm2', undefined), false);
+    assert.strictEqual(shouldUseLocalIterm2Bridge('vscodeTerminal', 'ssh-remote'), false);
+  });
+
+  it('declares the companion extension as UI-only with hidden command activation', () => {
+    const packagePath = path.resolve(__dirname, '../../../extensions/local-bridge/package.json');
+    const manifest = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+
+    assert.deepStrictEqual(manifest.extensionKind, ['ui']);
+    assert.ok(manifest.activationEvents.includes('onCommand:clihubLocal.writeToIterm2'));
+    assert.strictEqual(manifest.contributes?.commands, undefined);
+    assert.strictEqual(manifest.publisher, 'MasonHuang');
   });
 });

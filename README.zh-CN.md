@@ -79,6 +79,8 @@
 - `vscodeTerminal`：默认值，沿用 CLI Hub 的“激活终端 > 最近会话 > 自动新建”VS Code 终端路由。
 - `iterm2`：仅 macOS 可用，通过 AppleScript 直接写入 iTerm2 当前窗口的 current session，不依赖剪贴板；需要 iTerm2 正在运行，并授予 VS Code macOS Automation 权限。
 
+在 Remote SSH 窗口中，主扩展运行在远端 extension host，不能直接执行本机 AppleScript。若要继续把远端路径上下文写入本机 iTerm2，请在本机安装 companion 扩展 `MasonHuang.cli-hub-local-bridge`。如果未安装，CLI Hub 会提示安装，或允许你回退发送到当前路由的 VS Code terminal。
+
 ```json
 {
   "clihub.pathSendTarget": "iterm2"
@@ -150,7 +152,7 @@ CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/inst
 ```
 
 ## 发布流程
-推送 `v*` tag 会触发 release workflow：运行测试、打包 `cli-hub-<version>-public.vsix`、上传到 GitHub Releases；如果仓库配置了 `VSCE_PAT` secret，还会把同一个 VSIX 发布到 VS Code Marketplace。
+推送 `v*` tag 会触发 release workflow：运行测试、打包 `cli-hub-<version>-public.vsix` 和 `cli-hub-local-bridge-<version>-public.vsix`、上传到 GitHub Releases；如果仓库配置了 `VSCE_PAT` secret，还会把两个 VSIX 发布到 VS Code Marketplace。
 
 在 Visual Studio Marketplace publisher portal 创建 Marketplace token 后，把它保存为 GitHub Actions 仓库 secret，名称必须是 `VSCE_PAT`：
 
@@ -159,6 +161,10 @@ gh secret set VSCE_PAT --repo hxy91819/clihub
 ```
 
 不要把 token 提交到代码或写进 workflow 文件。
+
+本地调试可运行 `npm run package:dev`。它会生成两个高于当前 patch 的可见开发版本号 VSIX，例如源码版本为 `1.4.7` 时生成 `1.4.8-dev.20260709185312`，随后自动把源码中的 `package.json` 恢复为正常发布版本。设置 `CLIHUB_DEV_BUILD_LABEL=<label>` 可用可读后缀替代时间戳。
+
+运行 `npm run install:dev` 可把最新 dev VSIX 安装到本机 VS Code 和 `dev-server` 的 VS Code Server，不再依赖 `code --remote --install-extension`。运行 `npm run install:dev:cursor-main` 可只把主扩展安装到本机 Cursor 和 `dev-server` 的 Cursor Server，故意不安装 `CLI Hub Local Bridge`，用于测试缺失 bridge 的提示。
 
 ## 当前内置工具
 

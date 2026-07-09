@@ -52,6 +52,8 @@ Controls where `Send File Path to AI Tool Terminal` writes path context.
 - `vscodeTerminal`: default. Uses CLI Hub's active/recent/create VS Code terminal routing.
 - `iterm2`: macOS only. Writes directly to iTerm2's current session via AppleScript without using the clipboard. iTerm2 must be running, and macOS Automation permission for VS Code is required.
 
+In a Remote SSH window, CLI Hub still runs in the remote extension host so it cannot execute local AppleScript directly. Install the companion extension `MasonHuang.cli-hub-local-bridge` locally to keep `clihub.pathSendTarget = "iterm2"` writing to your local iTerm2 current session. If the bridge is missing, CLI Hub prompts you to install it or send the same path context to the routed VS Code terminal instead.
+
 ```json
 {
   "clihub.pathSendTarget": "iterm2"
@@ -146,7 +148,7 @@ CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/inst
 ```
 
 ## Release Publishing
-Pushing a `v*` tag runs the release workflow. It tests, packages `cli-hub-<version>-public.vsix`, uploads it to GitHub Releases, and publishes the same VSIX to the VS Code Marketplace when the repository secret `VSCE_PAT` is configured.
+Pushing a `v*` tag runs the release workflow. It tests, packages `cli-hub-<version>-public.vsix` and `cli-hub-local-bridge-<version>-public.vsix`, uploads both to GitHub Releases, and publishes both VSIX files to the VS Code Marketplace when the repository secret `VSCE_PAT` is configured.
 
 Create the Marketplace token from the Visual Studio Marketplace publisher portal, then store it as a GitHub Actions repository secret named `VSCE_PAT`:
 
@@ -155,6 +157,10 @@ gh secret set VSCE_PAT --repo hxy91819/clihub
 ```
 
 Do not commit the token or paste it into workflow files.
+
+For local debugging, use `npm run package:dev`. It generates both VSIX files with a visible prerelease version above the current patch, such as `1.4.8-dev.20260709185312` when the source version is `1.4.7`, then restores the source `package.json` files back to the normal release version. Set `CLIHUB_DEV_BUILD_LABEL=<label>` to use a readable suffix instead of the timestamp.
+
+Use `npm run install:dev` to install the latest dev VSIX into local VS Code and the `dev-server` VS Code Server without relying on `code --remote --install-extension`. Use `npm run install:dev:cursor-main` to install only the main extension into local Cursor and the `dev-server` Cursor Server, leaving `CLI Hub Local Bridge` uninstalled for missing-bridge prompt testing.
 
 ## Supported Tools
 

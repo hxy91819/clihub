@@ -44,17 +44,18 @@ jobs:
         run: |
           TAG_NAME="${GITHUB_REF_NAME}"
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" cli-hub-*-public.vsix --clobber
+            gh release upload "$TAG_NAME" cli-hub-[0-9]*-public.vsix cli-hub-local-bridge-*-public.vsix --clobber
           else
-            gh release create "$TAG_NAME" cli-hub-*-public.vsix --generate-notes --latest
+            gh release create "$TAG_NAME" cli-hub-[0-9]*-public.vsix cli-hub-local-bridge-*-public.vsix --generate-notes --latest
           fi
 
       - name: Publish to VS Code Marketplace
         if: ${{ env.VSCE_PAT != '' }}
         shell: bash
         run: |
-          VSIX_FILE="$(ls cli-hub-*-public.vsix | head -n 1)"
-          npx --yes @vscode/vsce publish --packagePath "$VSIX_FILE" --skip-duplicate
+          for VSIX_FILE in cli-hub-[0-9]*-public.vsix cli-hub-local-bridge-*-public.vsix; do
+            npx --yes @vscode/vsce publish --packagePath "$VSIX_FILE" --skip-duplicate
+          done
 
       - name: Skip VS Code Marketplace publish
         if: ${{ env.VSCE_PAT == '' }}
