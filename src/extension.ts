@@ -59,6 +59,7 @@ const ITERM2_WRITE_TEXT_SCRIPT = [
   '  if (count of argv) is 0 then error "Missing text to write."',
   '  set textToWrite to item 1 of argv',
   '  tell application "iTerm2"',
+  '    activate',
   '    if (count of windows) is 0 then error "No iTerm2 windows are open."',
   '    tell current session of current window',
   '      write text textToWrite newline NO',
