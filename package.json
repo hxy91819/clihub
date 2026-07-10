@@ -2,7 +2,7 @@
   "name": "cli-hub",
   "displayName": "CLI Hub: AI Tools Terminal",
   "description": "Open and manage multiple AI CLI terminal sessions in VS Code.",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "publisher": "MasonHuang",
   "repository": {
     "type": "git",

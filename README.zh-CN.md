@@ -2,11 +2,7 @@
 
 [English](./README.md) | 中文
 
-**当前版本**: cli-hub-1.4.7.vsix
-
 一个轻量级的 VS Code 扩展，将多种 AI CLI 工具直接集成到编辑器中，支持多 Terminal 会话、激活会话路由和快速发送文件路径。
-
-下载方式：使用 GitHub Actions 构建产物或 GitHub Releases 中的 `.vsix` 包。
 
 ## 功能特性
 
@@ -57,9 +53,6 @@
 4. 如果你希望 CLI Hub 每次打开终端时都把面板移到右侧，可将 `clihub.nativeTerminalLocation` 设为 `right`。
 
 ## 配置选项
-
-> `clihub.terminalOpenMode` 已移除。  
-> 原因：`editor` 模式会引入分组锁定/布局时序等额外复杂度，影响多会话与激活路由稳定性；当前统一为 native-only 以降低回归风险。
 
 ### `clihub.nativeTerminalLocation`
 控制 CLI Hub 原生终端的展示位置：
@@ -134,43 +127,6 @@
   }
 }
 ```
-
-## 如何添加新的工具
-1. 编辑 `config/tool-manifest.public.json`，添加新的工具条目（`id`、`label`、`description`、`command`，必要时追加 `packageName` 或 `installCommand`）。
-2. 如需构建非公开版工具集，在 release 流程中通过 `--tool-manifest` 注入外部 manifest，不要把私有工具定义提交到开源仓库。
-3. 更新 `README.md`、`README.zh-CN.md`、`CHANGELOG.md` 等文档，确保用户了解新工具的支持与安装方式。
-4. 运行 `npm run compile` 确认类型检查通过，并在扩展开发主机中手动验证终端切换逻辑。
-
-## 开发者安装脚本
-`npm run install:everywhere` 用于本地/远端测试安装 Codebuddy CLI 和选中的 VSIX。默认只把扩展安装到 VS Code（本地 `code`、远端 `.vscode-server`）。
-
-如需显式包含其他 VS Code-like IDE：
-
-```bash
-bash ./scripts/install-everywhere.sh --local-editors "code=VS Code,cursor=Cursor"
-CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/install-everywhere.sh
-```
-
-## 发布流程
-推送 `v*` tag 会触发 release workflow：运行测试、打包 `cli-hub-<version>-public.vsix` 和 `cli-hub-local-bridge-<version>-public.vsix`、上传到 GitHub Releases；配置对应的仓库 secret 后，还会把两个 VSIX 发布到 VS Code Marketplace 和 Open VSX。
-
-在 Visual Studio Marketplace publisher portal 创建 Marketplace token 后，把它保存为 GitHub Actions 仓库 secret，名称必须是 `VSCE_PAT`：
-
-```bash
-gh secret set VSCE_PAT --repo hxy91819/clihub
-```
-
-签署 publisher agreement 并创建 Open VSX access token 后，把它保存为 GitHub Actions 仓库 secret，名称必须是 `OPENVSX`：
-
-```bash
-gh secret set OPENVSX --repo hxy91819/clihub
-```
-
-首次发布时，release workflow 会在 namespace 不存在的情况下自动创建 `MasonHuang`。两个市场使用独立 job 发布，某个市场临时失败不会阻塞另一个市场。不要把任何 token 提交到代码或写进 workflow 文件。
-
-本地调试可运行 `npm run package:dev`。它会生成两个高于当前 patch 的可见开发版本号 VSIX，例如源码版本为 `1.4.7` 时生成 `1.4.8-dev.20260709185312`，随后自动把源码中的 `package.json` 恢复为正常发布版本。设置 `CLIHUB_DEV_BUILD_LABEL=<label>` 可用可读后缀替代时间戳。
-
-运行 `npm run install:dev` 可把最新 dev VSIX 安装到本机 VS Code 和 `dev-server` 的 VS Code Server，不再依赖 `code --remote --install-extension`。运行 `npm run install:dev:cursor-main` 可只把主扩展安装到本机 Cursor 和 `dev-server` 的 Cursor Server，故意不安装 `CLI Hub Local Bridge`，用于测试缺失 bridge 的提示。
 
 ## 当前内置工具
 

@@ -4,8 +4,6 @@ English | [中文](./README.zh-CN.md)
 
 A lightweight VS Code extension that brings multiple AI CLI tools into your editor with multi-terminal sessions and active-session routing.
 
-Download: use the GitHub Actions build artifacts or the `.vsix` asset attached to GitHub Releases.
-
 ## Features
 
 ### 1. Quick Terminal Access
@@ -43,8 +41,17 @@ Use the keyboard shortcut `Cmd+Shift+J` (Mac) or `Ctrl+Shift+J` (Windows/Linux) 
 
 ## Configuration
 
-> `clihub.terminalOpenMode` and `clihub.moveNativeTerminalToRight` are removed.  
-> Reason: editor mode introduced extra editor-group locking/layout timing complexity and made multi-session active-routing less stable. The extension is now native-only to reduce regressions.
+### `clihub.nativeTerminalLocation`
+Controls where the native terminal panel is shown when CLI Hub opens or reuses a terminal.
+
+- `panel`: default. Keeps the current VS Code panel layout.
+- `right`: moves the terminal panel to the right whenever CLI Hub opens or reuses a terminal.
+
+```json
+{
+  "clihub.nativeTerminalLocation": "right"
+}
+```
 
 ### `clihub.pathSendTarget`
 Controls where `Send File Path to AI Tool Terminal` writes path context.
@@ -130,43 +137,6 @@ This is useful when a CLI must be launched with both env vars and flags, such as
 3. **Flag ignored**: Close the existing terminal and relaunch it via the extension.
 4. **Multiple flags**: Separate them with spaces, e.g. `"--flag1 --flag2 value"`.
 5. **Whitespace inside values**: Wrap them in quotes such as `"--arg \"value with spaces\""`; VS Code preserves the quoting.
-
-## Adding a Tool
-1. Edit `config/tool-manifest.public.json` and add a new tool entry with `id`, `label`, `description`, and `command`, plus `packageName` or `installCommand` when needed.
-2. For non-public builds, inject an external manifest through the release pipeline instead of committing private tool definitions to this repository.
-3. Update `README.md`, `README.zh-CN.md`, and `CHANGELOG.md` so users know how the new tool is installed and used.
-4. Run `npm run compile` and validate terminal routing in an Extension Development Host.
-
-## Developer Install Script
-`npm run install:everywhere` installs Codebuddy CLI and the selected VSIX for local/remote testing. By default, extension installation targets only VS Code (`code` locally and `.vscode-server` remotely).
-
-To include other VS Code-like IDEs explicitly:
-
-```bash
-bash ./scripts/install-everywhere.sh --local-editors "code=VS Code,cursor=Cursor"
-CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/install-everywhere.sh
-```
-
-## Release Publishing
-Pushing a `v*` tag runs the release workflow. It tests, packages `cli-hub-<version>-public.vsix` and `cli-hub-local-bridge-<version>-public.vsix`, uploads both to GitHub Releases, and publishes both VSIX files to the VS Code Marketplace and Open VSX when their repository secrets are configured.
-
-Create the Marketplace token from the Visual Studio Marketplace publisher portal, then store it as a GitHub Actions repository secret named `VSCE_PAT`:
-
-```bash
-gh secret set VSCE_PAT --repo hxy91819/clihub
-```
-
-Create an Open VSX access token after signing the publisher agreement, then store it as a GitHub Actions repository secret named `OPENVSX`:
-
-```bash
-gh secret set OPENVSX --repo hxy91819/clihub
-```
-
-The release workflow creates the `MasonHuang` Open VSX namespace on the first publish if it does not already exist. Marketplace publishing runs in independent jobs, so a temporary failure in one marketplace does not block the other. Do not commit either token or paste it into workflow files.
-
-For local debugging, use `npm run package:dev`. It generates both VSIX files with a visible prerelease version above the current patch, such as `1.4.8-dev.20260709185312` when the source version is `1.4.7`, then restores the source `package.json` files back to the normal release version. Set `CLIHUB_DEV_BUILD_LABEL=<label>` to use a readable suffix instead of the timestamp.
-
-Use `npm run install:dev` to install the latest dev VSIX into local VS Code and the `dev-server` VS Code Server without relying on `code --remote --install-extension`. Use `npm run install:dev:cursor-main` to install only the main extension into local Cursor and the `dev-server` Cursor Server, leaving `CLI Hub Local Bridge` uninstalled for missing-bridge prompt testing.
 
 ## Supported Tools
 
