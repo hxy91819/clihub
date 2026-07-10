@@ -5,20 +5,24 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing v* tag to publish
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
-  publish-release:
+  build-release:
     runs-on: ubuntu-latest
-    env:
-      OVSX_PAT: ${{ secrets.OPENVSX }}
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,30 +42,72 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           bash ./release.sh "$VERSION" --force --channel public
 
+      - name: Upload VSIX workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-vsix
+          path: |
+            cli-hub-[0-9]*-public.vsix
+            cli-hub-local-bridge-*-public.vsix
+          if-no-files-found: error
+
       - name: Create GitHub Release and upload VSIX
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ inputs.tag || github.ref_name }}
         shell: bash
         run: |
-          TAG_NAME="${GITHUB_REF_NAME}"
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release upload "$TAG_NAME" cli-hub-[0-9]*-public.vsix cli-hub-local-bridge-*-public.vsix --clobber
           else
             gh release create "$TAG_NAME" cli-hub-[0-9]*-public.vsix cli-hub-local-bridge-*-public.vsix --generate-notes --latest
           fi
 
+  publish-vscode-marketplace:
+    needs: build-release
+    runs-on: ubuntu-latest
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+    steps:
+      - name: Download VSIX workflow artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: public-vsix
+
       - name: Publish to VS Code Marketplace
         if: ${{ env.VSCE_PAT != '' }}
         shell: bash
         run: |
           for VSIX_FILE in cli-hub-[0-9]*-public.vsix cli-hub-local-bridge-*-public.vsix; do
-            npx --yes @vscode/vsce publish --packagePath "$VSIX_FILE" --skip-duplicate
+            for ATTEMPT in 1 2 3; do
+              if npx --yes @vscode/vsce publish --packagePath "$VSIX_FILE" --skip-duplicate; then
+                break
+              fi
+              if [ "$ATTEMPT" = "3" ]; then
+                echo "VS Code Marketplace publish failed after $ATTEMPT attempts: $VSIX_FILE"
+                exit 1
+              fi
+              sleep $((ATTEMPT * 15))
+            done
           done
 
       - name: Skip VS Code Marketplace publish
         if: ${{ env.VSCE_PAT == '' }}
         run: |
           echo "VSCE_PAT is not configured; skipping VS Code Marketplace publish."
+
+  publish-open-vsx:
+    needs: build-release
+    runs-on: ubuntu-latest
+    env:
+      OVSX_PAT: ${{ secrets.OPENVSX }}
+
+    steps:
+      - name: Download VSIX workflow artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: public-vsix
 
       - name: Ensure Open VSX namespace exists
         if: ${{ env.OVSX_PAT != '' }}
@@ -86,4 +132,4 @@ jobs:
       - name: Skip Open VSX publish
         if: ${{ env.OVSX_PAT == '' }}
         run: |
-          echo "OVSX_PAT is not configured; skipping Open VSX publish."
+          echo "OPENVSX is not configured; skipping Open VSX publish."

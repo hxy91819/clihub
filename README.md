@@ -162,7 +162,7 @@ Create an Open VSX access token after signing the publisher agreement, then stor
 gh secret set OPENVSX --repo hxy91819/clihub
 ```
 
-The release workflow creates the `MasonHuang` Open VSX namespace on the first publish if it does not already exist. Do not commit either token or paste it into workflow files.
+The release workflow creates the `MasonHuang` Open VSX namespace on the first publish if it does not already exist. Marketplace publishing runs in independent jobs, so a temporary failure in one marketplace does not block the other. Do not commit either token or paste it into workflow files.
 
 For local debugging, use `npm run package:dev`. It generates both VSIX files with a visible prerelease version above the current patch, such as `1.4.8-dev.20260709185312` when the source version is `1.4.7`, then restores the source `package.json` files back to the normal release version. Set `CLIHUB_DEV_BUILD_LABEL=<label>` to use a readable suffix instead of the timestamp.
 

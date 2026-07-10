@@ -166,7 +166,7 @@ gh secret set VSCE_PAT --repo hxy91819/clihub
 gh secret set OPENVSX --repo hxy91819/clihub
 ```
 
-首次发布时，release workflow 会在 namespace 不存在的情况下自动创建 `MasonHuang`。不要把任何 token 提交到代码或写进 workflow 文件。
+首次发布时，release workflow 会在 namespace 不存在的情况下自动创建 `MasonHuang`。两个市场使用独立 job 发布，某个市场临时失败不会阻塞另一个市场。不要把任何 token 提交到代码或写进 workflow 文件。
 
 本地调试可运行 `npm run package:dev`。它会生成两个高于当前 patch 的可见开发版本号 VSIX，例如源码版本为 `1.4.7` 时生成 `1.4.8-dev.20260709185312`，随后自动把源码中的 `package.json` 恢复为正常发布版本。设置 `CLIHUB_DEV_BUILD_LABEL=<label>` 可用可读后缀替代时间戳。
 
