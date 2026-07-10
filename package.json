@@ -191,15 +191,14 @@
     "compile:main": "tsc -p ./",
     "compile:bridge": "tsc -p ./extensions/local-bridge",
     "validate:release": "node ./scripts/validate-release.js",
-    "package:dev": "bash ./release.sh $(node -p \"require('./package.json').version\") --force --channel public --dev-build",
-    "install:dev": "CLIHUB_REMOTE_HOST=dev-server bash ./scripts/install-dev-vsix.sh",
-    "install:dev:cursor-main": "CLIHUB_EDITOR=cursor CLIHUB_REMOTE_HOST=dev-server CLIHUB_MAIN_ONLY=true bash ./scripts/install-dev-vsix.sh",
+    "dev:package": "bash ./release.sh $(node -p \"require('./package.json').version\") --force --channel public --dev-build",
+    "dev:install": "node ./scripts/dev-install.js",
     "watch": "tsc -w -p ./",
-    "pretest": "npm run compile",
+    "pretest": "npm run compile && npm run test:scripts",
+    "test:scripts": "node --test ./scripts/*.test.js",
     "test": "node ./out/test/runTest.js",
     "test:unit": "node ./out/test/runTest.js --grep 'Unit'",
     "test:integration": "node ./out/test/runTest.js --grep 'Integration'",
-    "install:everywhere": "bash ./scripts/install-everywhere.sh",
     "bmad:refresh": "bmad-method install -f -i codex",
     "bmad:list": "bmad-method list:agents",
     "bmad:validate": "bmad-method validate"
@@ -210,6 +209,7 @@
     "@types/vscode": "1.99.0",
     "@vscode/test-electron": "^2.5.2",
     "mocha": "^11.7.4",
+    "semver": "^7.7.3",
     "typescript": "^5.9.3"
   }
 }

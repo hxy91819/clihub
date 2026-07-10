@@ -15,6 +15,7 @@ npm install           # install dependencies
 npm run compile       # one-off TypeScript build -> out/
 npm run validate:release # validate release metadata/docs/workflow invariants
 npm test              # run unit and Extension Host integration tests
+npm run dev:install   # build paired Dev VSIX files and install into local VS Code
 npm run watch         # incremental build while developing
 code --extensionDevelopmentPath=$(pwd)  # launch Extension Dev Host manually
 ```
@@ -28,6 +29,7 @@ Use VS Code's `Run Extension` / `F5` workflow for day-to-day debugging.
 
 ## Testing Guidelines
 - Automated tests use `@vscode/test-electron`; keep test sources under `src/test/` and name specs `*.test.ts`.
+- Developer scripts use Node's test runner; keep tests under `scripts/*.test.js` and run `npm run test:scripts`.
 - Run `npm test` for changes that affect commands, terminal routing, manifests, packaging, or release behavior.
 - Document manual test scenarios in the PR description if automation is absent.
 
@@ -42,6 +44,13 @@ Use VS Code's `Run Extension` / `F5` workflow for day-to-day debugging.
 - Run `npm run validate:release` before committing release-related changes.
 - Confirm default settings (especially `clihub.terminalCommand`) remain aligned with CLI expectations before shipping.
 - Follow `docs/development-and-release.md` and `docs/release-guardrails.md` for release and incident handling.
+
+## Agent Must-Know (Developer Install)
+- `npm run dev:install` is the single supported developer installation entrypoint.
+- Default behavior must remain local VS Code only, with no remote SSH or global AI CLI mutation.
+- Other VS Code-like IDEs and remote hosts must be explicit, repeatable configuration.
+- Main and Local Bridge VSIX files must be selected as an exact version pair; never select by a broad `cli-hub-*.vsix` glob.
+- Remote installs place only the main extension on the remote host and keep Local Bridge local.
 
 ## Agent Must-Know (Terminal Architecture)
 - Terminal mode is **native-only**. Do not re-introduce `editor` mode branches.

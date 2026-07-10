@@ -22,18 +22,81 @@ npm run validate:release
 
 ## 测试安装
 
-`npm run install:everywhere` 用于把选定 VSIX 安装到本地和远端开发环境。默认目标只有 VS Code：本地使用 `code`，远端使用 `.vscode-server`。
-
-显式测试其他 VS Code 类 IDE：
+统一入口：
 
 ```bash
-bash ./scripts/install-everywhere.sh --local-editors "code=VS Code,cursor=Cursor"
-CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/install-everywhere.sh
+npm run dev:install
 ```
 
-`npm run package:dev` 会生成主扩展和 Local Bridge 的开发版 VSIX。开发版使用高于当前 patch 的可见预发布版本，完成后自动恢复源码中的正式版本号。可通过 `CLIHUB_DEV_BUILD_LABEL=<label>` 设置可读后缀。
+默认行为适合普通贡献者：
 
-`npm run install:dev` 把最新开发包安装到本机 VS Code 和 `dev-server` 的 VS Code Server。`npm run install:dev:cursor-main` 只安装主扩展到本机 Cursor 和 `dev-server` Cursor Server，用于验证缺少 Local Bridge 时的提示和回退行为。
+- 生成一对版本完全一致、且高于当前稳定 patch 的 Dev VSIX。
+- 把主插件和 Local Bridge 安装到本机 VS Code。
+- 不连接任何远端主机，不安装或升级 Codebuddy 等全局 AI CLI。
+- 安装后读取 IDE 扩展列表，确认主插件和 Bridge 的实际版本。
+
+本机需要 Node.js、npm、Python 3、Bash、`unzip` 和目标 IDE CLI；使用远端安装时，本机还需要 `ssh` / `scp`，远端需要 Node.js 与 `unzip`。缺失命令会在对应步骤返回明确错误。
+
+### 本地 IDE
+
+`--editor` 可重复使用。第一次显式传入会替换默认的 VS Code；值可以是 PATH 中的 CLI、可执行文件绝对路径，或 `cli=显示名称`：
+
+```bash
+npm run dev:install -- --editor cursor=Cursor
+npm run dev:install -- --editor code="VS Code" --editor cursor=Cursor
+npm run dev:install -- --editor /absolute/path/to/editor-cli="Custom IDE"
+```
+
+macOS 上即使 `code` / `cursor` 不在 PATH，安装器也会识别标准应用目录。其他 VS Code 类 IDE 通过 CLI 名称或绝对路径配置，不需要修改脚本。
+
+### Remote SSH
+
+远端安装是显式 opt-in。主插件安装到远端 Server，Local Bridge 只安装在本机 IDE：
+
+```bash
+npm run dev:install -- \
+  --editor cursor=Cursor \
+  --remote dev-server \
+  --remote-root .cursor-server
+```
+
+`--remote` 和 `--remote-root` 都可重复。相对 root 从远端 home 目录解析；默认 root 是 `.vscode-server`。远端安装使用临时 staging 目录完成原子替换，并在成功或失败后清理上传的 VSIX 和解压目录。
+
+只操作远端时使用 `--no-local`。但测试 Remote SSH 到本机 iTerm2 时，本机仍需要 Local Bridge，因此该场景通常不要跳过本地安装。
+
+### 调试变体
+
+```bash
+# 自定义可读 Dev 版本后缀
+npm run dev:install -- --label bridge-test
+
+# 验证缺少 Local Bridge 时的提示；会主动卸载目标 IDE 中的 Bridge
+npm run dev:install -- --main-only
+
+# 复用仓库根目录中最新、版本严格匹配的 Dev VSIX 对
+npm run dev:install -- --skip-package
+
+# 只打印打包、IDE 和 SSH 操作，不执行任何修改
+npm run dev:install -- --dry-run --editor cursor --remote dev-server --remote-root .cursor-server
+```
+
+`--skip-package` 只自动选择带 `-dev.` 的成对包，不会误选稳定版或把 Local Bridge 当作主插件。也可以同时传入 `--main-vsix` / `--bridge-vsix` 指定包；安装前会读取包内 manifest 校验 ID 和版本。
+
+可用环境变量为个人工作站保存默认目标：
+
+```bash
+export CLIHUB_DEV_EDITORS="code=VS Code,cursor=Cursor"
+export CLIHUB_DEV_REMOTES="dev-server"
+export CLIHUB_DEV_REMOTE_ROOTS=".vscode-server,.cursor-server"
+```
+
+只生成 Dev VSIX、不安装：
+
+```bash
+npm run dev:package
+```
+
+开发打包完成后会自动恢复源码中的正式版本号。运行 `npm run dev:install -- --help` 可查看完整参数。
 
 ## 正式打包
 

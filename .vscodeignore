@@ -22,8 +22,9 @@ AGENTS.md
 release.sh
 config/tool-manifest.internal.json
 icons/cli-hub-icon-a.svg
-scripts/install-dev-vsix.sh
-scripts/install-everywhere.sh
+scripts/dev-install.js
+scripts/dev-install.test.js
+scripts/dev-remote-install.sh
 scripts/validate-release.js
 scripts/validate-vsix-contents.js
 scripts/verify-open-vsx-release.js
