@@ -7,6 +7,15 @@ EXPECTED_ID="$2"
 EXPECTED_VERSION="$3"
 shift 3
 
+TMP=""
+cleanup() {
+  if [ -n "$TMP" ]; then
+    rm -rf "$TMP"
+  fi
+  rm -f "$VSIX"
+}
+trap cleanup EXIT
+
 for command_name in node unzip; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Error: required remote command not found: $command_name" >&2
@@ -15,11 +24,6 @@ for command_name in node unzip; do
 done
 
 TMP="$(mktemp -d)"
-cleanup() {
-  rm -rf "$TMP"
-  rm -f "$VSIX"
-}
-trap cleanup EXIT
 
 unzip -q "$VSIX" -d "$TMP"
 MANIFEST="$TMP/extension/package.json"

@@ -216,12 +216,37 @@ test('remote install uploads only the main VSIX and sends cleanup script through
   assert.match(calls[1].args[2], /\.vscode-server/);
   assert.match(calls[1].args[2], /\.cursor-server/);
   assert.match(calls[1].runOptions.input, /trap cleanup EXIT/);
+  assert.equal(calls.length, 2);
+});
+
+test('remote install retries cleanup after the install SSH command fails', () => {
+  const calls = [];
+  const options = { remotes: ['dev-server'], remoteRoots: ['.vscode-server'] };
+  const pair = { main: { path: '/tmp/main.vsix', id: MAIN_ID, version: '1.5.4-dev.test' } };
+  const run = (command, args, runOptions = {}) => {
+    calls.push({ command, args, runOptions });
+    if (command === 'ssh' && runOptions.input) {
+      throw new Error('simulated install SSH failure');
+    }
+    return { status: 0, stdout: '' };
+  };
+
+  assert.throws(
+    () => installRemoteHosts(options, pair, run),
+    /simulated install SSH failure/
+  );
+  assert.equal(calls.filter(call => call.command === 'ssh').length, 2);
+  assert.match(calls.at(-1).args[2], /^rm -f -- '\/tmp\/clihub-dev-/);
 });
 
 test('remote command quoting and script preserve cleanup and atomic staging', () => {
   assert.equal(shellQuote("a'b"), `'a'"'"'b'`);
   assert.match(REMOTE_INSTALL_SCRIPT, /trap cleanup EXIT/);
   assert.match(REMOTE_INSTALL_SCRIPT, /rm -f "\$VSIX"/);
+  assert.ok(
+    REMOTE_INSTALL_SCRIPT.indexOf('trap cleanup EXIT') < REMOTE_INSTALL_SCRIPT.indexOf('command -v'),
+    'cleanup trap must be registered before remote dependency checks'
+  );
   assert.match(REMOTE_INSTALL_SCRIPT, /staging=/);
   assert.match(REMOTE_INSTALL_SCRIPT, /mv "\$staging" "\$target"/);
   const syntaxCheck = spawnSync('bash', ['-n'], { input: REMOTE_INSTALL_SCRIPT, encoding: 'utf8' });

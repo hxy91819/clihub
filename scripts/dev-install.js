@@ -476,16 +476,29 @@ function installLocalEditors(options, pair, run, resolveEditor = resolveEditorCo
 function installRemoteHosts(options, pair, run) {
   const failures = [];
   for (const host of options.remotes) {
+    const remoteVsix = `/tmp/clihub-dev-${process.pid}-${Date.now()}.vsix`;
+    let failure = '';
     try {
-      const remoteVsix = `/tmp/clihub-dev-${process.pid}-${Date.now()}-${path.basename(pair.main.path)}`;
       console.log(`\nInstalling main extension on remote host ${host}`);
       run('scp', ['--', pair.main.path, `${host}:${remoteVsix}`]);
       const remoteArgs = [remoteVsix, pair.main.id, pair.main.version, ...options.remoteRoots];
       const remoteCommand = `bash -s -- ${remoteArgs.map(shellQuote).join(' ')}`;
       run('ssh', ['--', host, remoteCommand], { input: REMOTE_INSTALL_SCRIPT });
     } catch (error) {
-      failures.push(`${host}: ${error.message}`);
-      console.error(`Remote install failed for ${host}: ${error.message}`);
+      failure = error.message;
+    }
+
+    if (failure) {
+      try {
+        run('ssh', ['--', host, `rm -f -- ${shellQuote(remoteVsix)}`], { quiet: true });
+      } catch (error) {
+        failure = `${failure}; remote cleanup failed: ${error.message}`;
+      }
+    }
+
+    if (failure) {
+      failures.push(`${host}: ${failure}`);
+      console.error(`Remote install failed for ${host}: ${failure}`);
     }
   }
   if (failures.length > 0) {
