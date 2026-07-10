@@ -190,6 +190,7 @@
     "compile": "tsc -p ./ && tsc -p ./extensions/local-bridge",
     "compile:main": "tsc -p ./",
     "compile:bridge": "tsc -p ./extensions/local-bridge",
+    "validate:release": "node ./scripts/validate-release.js",
     "package:dev": "bash ./release.sh $(node -p \"require('./package.json').version\") --force --channel public --dev-build",
     "install:dev": "CLIHUB_REMOTE_HOST=dev-server bash ./scripts/install-dev-vsix.sh",
     "install:dev:cursor-main": "CLIHUB_EDITOR=cursor CLIHUB_REMOTE_HOST=dev-server CLIHUB_MAIN_ONLY=true bash ./scripts/install-dev-vsix.sh",

@@ -13,6 +13,8 @@ Always respond in Chinese.
 ```bash
 npm install           # install dependencies
 npm run compile       # one-off TypeScript build -> out/
+npm run validate:release # validate release metadata/docs/workflow invariants
+npm test              # run unit and Extension Host integration tests
 npm run watch         # incremental build while developing
 code --extensionDevelopmentPath=$(pwd)  # launch Extension Dev Host manually
 ```
@@ -25,8 +27,8 @@ Use VS Code's `Run Extension` / `F5` workflow for day-to-day debugging.
 - Run `npm run compile` before committing to catch type drift.
 
 ## Testing Guidelines
-- No automated test harness is present; validate changes by launching an Extension Development Host and exercising commands (`CLI Hub` palette command, `cmd/ctrl+shift+J` keybinding, installation checks).
-- When feasible, add smoke coverage with `@vscode/test-electron`; keep test sources under `src/test/` and name specs `*.test.ts`.
+- Automated tests use `@vscode/test-electron`; keep test sources under `src/test/` and name specs `*.test.ts`.
+- Run `npm test` for changes that affect commands, terminal routing, manifests, packaging, or release behavior.
 - Document manual test scenarios in the PR description if automation is absent.
 
 ## Commit & Pull Request Guidelines
@@ -36,8 +38,10 @@ Use VS Code's `Run Extension` / `F5` workflow for day-to-day debugging.
 - State how you validated the change (manual steps, builds) and flag any follow-up items.
 
 ## Release & Configuration Tips
-- Update the version in `package.json` before packaging; regenerate the `.vsix` with `vsce package`.
+- Use `bash ./release.sh <version> --channel public` instead of invoking `vsce package` directly; it keeps the main and Local Bridge versions aligned.
+- Run `npm run validate:release` before committing release-related changes.
 - Confirm default settings (especially `clihub.terminalCommand`) remain aligned with CLI expectations before shipping.
+- Follow `docs/development-and-release.md` and `docs/release-guardrails.md` for release and incident handling.
 
 ## Agent Must-Know (Terminal Architecture)
 - Terminal mode is **native-only**. Do not re-introduce `editor` mode branches.
@@ -48,13 +52,14 @@ Use VS Code's `Run Extension` / `F5` workflow for day-to-day debugging.
 - If terminal session behavior changes, update `src/test/suite/terminal-adoption.test.ts` accordingly.
 
 ## Agent Must-Know (Docs Hygiene)
-- Primary docs live under `docs/architecture/` plus `docs/README.md`.
+- Primary docs live under `docs/architecture/`, `docs/development-and-release.md`, `docs/release-guardrails.md`, plus `docs/README.md`.
 - Historical docs are archived under `docs/archive/legacy-2026-03/` and should not be treated as the source of truth.
 - When behavior/config/command changes, update current docs first; archive stale docs instead of mixing old and new narratives.
+- Root `README.md`, `README.zh-CN.md`, and `extensions/local-bridge/README.md` are Marketplace pages. Keep them user-facing; development, CI, packaging, credentials, and release instructions belong under `docs/`.
 
 ## AI Tool Support Matrix
 
-Tool selection is defined in `src/extension.ts` via the `AI_TOOLS` list. The current built-in options are:
+Public tool selection is defined in `config/tool-manifest.public.json` and loaded through `src/tool-manifest.ts`. The current built-in options are:
 
 | Tool ID       | Display Name    | Command / Binary | Install Command or Script                          |
 | ------------- | ----------------| ---------------- | -------------------------------------------------- |
@@ -62,6 +67,7 @@ Tool selection is defined in `src/extension.ts` via the `AI_TOOLS` list. The cur
 | `gemini`      | Gemini CLI      | `gemini`         | `npm install -g @google/gemini-cli`                |
 | `claude`      | Claude Code     | `claude`         | `npm install -g @anthropic-ai/claude-code`         |
 | `codex`       | Codex           | `codex`          | `npm install -g @openai/codex`                     |
+| `opencode`    | OpenCode        | `opencode`       | `npm install -g opencode-ai`                       |
 | `copilot`     | GitHub Copilot  | `copilot`        | `npm install -g @github/copilot`                   |
 | `cursor-agent`| Cursor CLI      | `cursor-agent`   | `curl https://cursor.com/install -fsS \| bash`     |
 

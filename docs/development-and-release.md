@@ -8,6 +8,7 @@
 npm install
 npm run compile
 npm test
+npm run validate:release
 ```
 
 日常调试使用 VS Code 的 `Run Extension` / `F5` 启动 Extension Development Host。`out/` 是 TypeScript 编译产物，不直接修改。
@@ -49,6 +50,14 @@ bash ./release.sh <version> --channel internal \
   --tool-manifest /absolute/path/to/tool-manifest.internal.json
 ```
 
+### 发布前清单
+
+1. 确认 `git status --short` 中只有本次发布需要的改动。
+2. 运行 `npm run validate:release`，检查双插件版本、publisher、图标、README 边界和 workflow 结构。
+3. 运行 `npm test`。
+4. 使用 `release.sh` 生成两个 VSIX；脚本会检查包内 `package.json`、README 和文件列表，阻止内部 manifest、开发文档或维护脚本进入公开包。
+5. 提交版本改动后再创建 tag，确保 tag 指向包含当前 workflow 的提交。
+
 ## CI 发布
 
 推送 `v*` tag 会触发 `.github/workflows/release.yml`：
@@ -56,7 +65,8 @@ bash ./release.sh <version> --channel internal \
 1. 运行测试并生成 `cli-hub-<version>-public.vsix` 和 `cli-hub-local-bridge-<version>-public.vsix`。
 2. 上传两个 VSIX 到对应的 GitHub Release 和 workflow artifact。
 3. 使用独立 job 发布到 VS Code Marketplace 和 Open VSX，单个市场的临时故障不会阻塞另一个市场。
-4. VS Code Marketplace 发布遇到瞬时错误时最多重试三次。
+4. 两个市场都按 VSIX 独立尝试，单个包遇到瞬时错误时最多重试三次；某个包最终失败也不会阻止另一个包被尝试。
+5. Open VSX 发布后轮询两个精确版本及其线上 README，直到公开 API 可下载，默认最多等待约三分钟，避免把异步索引延迟误判为失败或成功。
 
 仓库需要配置以下 GitHub Actions secrets：
 
@@ -72,3 +82,7 @@ gh secret set OPENVSX --repo hxy91819/clihub
 ```bash
 gh workflow run release.yml --repo hxy91819/clihub --ref main -f tag=v<version>
 ```
+
+不要移动或覆盖已发布 tag。手动重跑会使用 `main` 上最新 workflow，但 checkout 和打包内容仍来自传入的已有 tag。
+
+完整故障复盘和长期防护策略见 `docs/release-guardrails.md`。

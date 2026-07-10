@@ -263,33 +263,13 @@ fs.writeFileSync(bridgePackagePath, JSON.stringify(bridgePackage, null, 2) + '\n
 console.log('Local Bridge package.json updated');
 NODE
 
-# 中文注释: 更新README中的版本信息（如果存在版本引用）
-python3 <<PY
-import pathlib
-import re
-import sys
+# 中文注释: 打包前校验双插件版本、publisher、图标、市场 README 和 release workflow 约束
+npm run validate:release
 
-root = pathlib.Path('$SCRIPT_DIR')
-readme_path = root / 'README.md'
-text = readme_path.read_text(encoding='utf-8')
-
-# 查找并更新 .vsix 文件名中的版本号
-pattern = r"cli-hub-[0-9]+\.[0-9]+\.[0-9]+\.vsix"
-replacement = f"cli-hub-{ '$NEW_VERSION' }.vsix"
-if '$DEV_BUILD' == 'false' and re.search(pattern, text):
-    readme_path.write_text(re.sub(pattern, replacement, text), encoding='utf-8')
-    print("README.md updated with new version")
-else:
-    print("No version references found in README.md to update")
-PY
-
-# 中文注释: 重新编译扩展
+# 中文注释: 打包前编译扩展
 npm run compile
 
 echo "Build finished"
-
-# 中文注释: 发布前再次强制编译
-npm run compile
 
 # 中文注释: 打包VSCode扩展 (自动安装vsce)
 PACKAGE_NAME="cli-hub-${PACKAGE_VERSION}-${CHANNEL}.vsix"
@@ -300,6 +280,8 @@ BRIDGE_PACKAGE_NAME="cli-hub-local-bridge-${PACKAGE_VERSION}-${CHANNEL}.vsix"
     cd "$SCRIPT_DIR/extensions/local-bridge"
     npx --yes vsce package --out "$SCRIPT_DIR/$BRIDGE_PACKAGE_NAME"
 )
+
+node ./scripts/validate-vsix-contents.js "$PACKAGE_NAME" "$BRIDGE_PACKAGE_NAME"
 
 echo "Release packages generated"
 

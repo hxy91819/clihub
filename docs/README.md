@@ -5,6 +5,7 @@
 ## 当前有效文档
 
 - `docs/development-and-release.md`：本地开发、测试安装、工具清单扩展与双市场发布流程
+- `docs/release-guardrails.md`：发布复盘、自动校验范围、故障判断与规避策略
 - `docs/architecture/index.md`：架构总览入口
 - `docs/architecture/quick-reference-key-files-and-entry-points.md`：关键文件与命令入口速查
 - `docs/architecture/core-architecture-terminal-lifecycle-management.md`：终端生命周期与会话模型
@@ -26,3 +27,4 @@
 - 新增命令或配置时，必须同步更新 `docs/architecture/data-models-and-apis.md`。
 - 大版本行为调整后，优先更新当前文档；历史文档进入归档，不在主目录继续叠加。
 - 根目录 `README.md` / `README.zh-CN.md` 会展示在扩展市场，只保留面向插件用户的功能、使用和配置说明；开发与发布内容维护在 `docs/`。
+- 发布相关改动必须运行 `npm run validate:release`；新增发布约束时同步更新校验脚本和 `docs/release-guardrails.md`。
