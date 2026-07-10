@@ -148,7 +148,7 @@ CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/inst
 ```
 
 ## Release Publishing
-Pushing a `v*` tag runs the release workflow. It tests, packages `cli-hub-<version>-public.vsix` and `cli-hub-local-bridge-<version>-public.vsix`, uploads both to GitHub Releases, and publishes both VSIX files to the VS Code Marketplace when the repository secret `VSCE_PAT` is configured.
+Pushing a `v*` tag runs the release workflow. It tests, packages `cli-hub-<version>-public.vsix` and `cli-hub-local-bridge-<version>-public.vsix`, uploads both to GitHub Releases, and publishes both VSIX files to the VS Code Marketplace and Open VSX when their repository secrets are configured.
 
 Create the Marketplace token from the Visual Studio Marketplace publisher portal, then store it as a GitHub Actions repository secret named `VSCE_PAT`:
 
@@ -156,7 +156,13 @@ Create the Marketplace token from the Visual Studio Marketplace publisher portal
 gh secret set VSCE_PAT --repo hxy91819/clihub
 ```
 
-Do not commit the token or paste it into workflow files.
+Create an Open VSX access token after signing the publisher agreement, then store it as a GitHub Actions repository secret named `OPENVSX`:
+
+```bash
+gh secret set OPENVSX --repo hxy91819/clihub
+```
+
+The release workflow creates the `MasonHuang` Open VSX namespace on the first publish if it does not already exist. Do not commit either token or paste it into workflow files.
 
 For local debugging, use `npm run package:dev`. It generates both VSIX files with a visible prerelease version above the current patch, such as `1.4.8-dev.20260709185312` when the source version is `1.4.7`, then restores the source `package.json` files back to the normal release version. Set `CLIHUB_DEV_BUILD_LABEL=<label>` to use a readable suffix instead of the timestamp.
 

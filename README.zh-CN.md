@@ -152,7 +152,7 @@ CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/inst
 ```
 
 ## 发布流程
-推送 `v*` tag 会触发 release workflow：运行测试、打包 `cli-hub-<version>-public.vsix` 和 `cli-hub-local-bridge-<version>-public.vsix`、上传到 GitHub Releases；如果仓库配置了 `VSCE_PAT` secret，还会把两个 VSIX 发布到 VS Code Marketplace。
+推送 `v*` tag 会触发 release workflow：运行测试、打包 `cli-hub-<version>-public.vsix` 和 `cli-hub-local-bridge-<version>-public.vsix`、上传到 GitHub Releases；配置对应的仓库 secret 后，还会把两个 VSIX 发布到 VS Code Marketplace 和 Open VSX。
 
 在 Visual Studio Marketplace publisher portal 创建 Marketplace token 后，把它保存为 GitHub Actions 仓库 secret，名称必须是 `VSCE_PAT`：
 
@@ -160,7 +160,13 @@ CLIHUB_REMOTE_SERVER_TARGETS=".vscode-server,.cursor-server" bash ./scripts/inst
 gh secret set VSCE_PAT --repo hxy91819/clihub
 ```
 
-不要把 token 提交到代码或写进 workflow 文件。
+签署 publisher agreement 并创建 Open VSX access token 后，把它保存为 GitHub Actions 仓库 secret，名称必须是 `OPENVSX`：
+
+```bash
+gh secret set OPENVSX --repo hxy91819/clihub
+```
+
+首次发布时，release workflow 会在 namespace 不存在的情况下自动创建 `MasonHuang`。不要把任何 token 提交到代码或写进 workflow 文件。
 
 本地调试可运行 `npm run package:dev`。它会生成两个高于当前 patch 的可见开发版本号 VSIX，例如源码版本为 `1.4.7` 时生成 `1.4.8-dev.20260709185312`，随后自动把源码中的 `package.json` 恢复为正常发布版本。设置 `CLIHUB_DEV_BUILD_LABEL=<label>` 可用可读后缀替代时间戳。
 

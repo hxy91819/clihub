@@ -13,6 +13,7 @@ jobs:
   publish-release:
     runs-on: ubuntu-latest
     env:
+      OVSX_PAT: ${{ secrets.OPENVSX }}
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
     steps:
@@ -61,3 +62,28 @@ jobs:
         if: ${{ env.VSCE_PAT == '' }}
         run: |
           echo "VSCE_PAT is not configured; skipping VS Code Marketplace publish."
+
+      - name: Ensure Open VSX namespace exists
+        if: ${{ env.OVSX_PAT != '' }}
+        shell: bash
+        run: |
+          HTTP_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' https://open-vsx.org/api/MasonHuang)
+          if [ "$HTTP_STATUS" = "404" ]; then
+            npx --yes ovsx create-namespace MasonHuang
+          elif [ "$HTTP_STATUS" != "200" ]; then
+            echo "Open VSX namespace lookup failed with HTTP status $HTTP_STATUS."
+            exit 1
+          fi
+
+      - name: Publish to Open VSX
+        if: ${{ env.OVSX_PAT != '' }}
+        shell: bash
+        run: |
+          for VSIX_FILE in cli-hub-[0-9]*-public.vsix cli-hub-local-bridge-*-public.vsix; do
+            npx --yes ovsx publish "$VSIX_FILE" --skip-duplicate
+          done
+
+      - name: Skip Open VSX publish
+        if: ${{ env.OVSX_PAT == '' }}
+        run: |
+          echo "OVSX_PAT is not configured; skipping Open VSX publish."
