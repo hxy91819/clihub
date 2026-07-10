@@ -22,6 +22,8 @@ npm run validate:release
 
 ## 测试安装
 
+当任务要求“本地安装测试”“安装本地开发版”或“在 VS Code 中体验当前代码”时，应实际执行以下统一入口，并以安装后的版本校验成功作为完成标准；只生成 VSIX 不算完成安装。目标是 Cursor 或其他 VS Code 类 IDE 时，按下文显式传入 `--editor`。
+
 统一入口：
 
 ```bash

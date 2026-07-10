@@ -103,7 +103,7 @@ function validateDocumentationBoundary() {
   check(!/clihubLocal\.writeToIterm2|hidden command|registers? the command/i.test(bridgeReadme), 'local bridge README must not expose implementation-only commands');
 
   const developmentDoc = readText('docs/development-and-release.md');
-  for (const requiredText of ['## 本地开发', '## 测试安装', 'npm run dev:install', '## 正式打包', '## CI 发布', 'VSCE_PAT', 'OPENVSX']) {
+  for (const requiredText of ['## 本地开发', '## 测试安装', '本地安装测试', 'npm run dev:install', '## 正式打包', '## CI 发布', 'VSCE_PAT', 'OPENVSX']) {
     check(developmentDoc.includes(requiredText), `docs/development-and-release.md: missing ${requiredText}`);
   }
 }

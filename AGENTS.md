@@ -47,6 +47,9 @@ Use VS Code's `Run Extension` / `F5` workflow for day-to-day debugging.
 
 ## Agent Must-Know (Developer Install)
 - `npm run dev:install` is the single supported developer installation entrypoint.
+- When a user asks for "本地安装测试", "安装本地开发版", or to try the current code in VS Code, run `npm run dev:install`; packaging a VSIX without installing it does not complete the request.
+- When the user names Cursor or another VS Code-like IDE, pass it explicitly with `--editor`; use multiple `--editor` flags only when every named IDE should receive the build.
+- Treat the installer's final version verification as part of completion, and tell the user to reload affected IDE windows after a successful install.
 - Default behavior must remain local VS Code only, with no remote SSH or global AI CLI mutation.
 - Other VS Code-like IDEs and remote hosts must be explicit, repeatable configuration.
 - Main and Local Bridge VSIX files must be selected as an exact version pair; never select by a broad `cli-hub-*.vsix` glob.
