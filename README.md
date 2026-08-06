@@ -1,7 +1,7 @@
 # CLI Hub: AI Tools Terminal
 # Git Clone
 ```
-git clone https://github.com/nano-chmod-x/cli_hub-MCP-SelfHosted-.git
+git clone https://github.com/nano-chmod-x/cli_hub-MCP-SelfHosted.git 
 ```
 English | [中文](./README.zh-CN.md)
 
